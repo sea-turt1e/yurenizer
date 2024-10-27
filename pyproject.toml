@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "yurenizer"
+version = "0.0.1"
+description = "A library for standardizing terms with spelling variations using a synonym dictionary."
+authors = ["sea-turt1e <h.yamada.bg@gmail.com>"]
+license = "Apache-2.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+sudachipy = ">=0.6.8"
+sudachidict-full = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
