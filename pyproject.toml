@@ -14,3 +14,6 @@ sudachidict-full = "*"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+post-install = "scripts.post_install:post_install"
