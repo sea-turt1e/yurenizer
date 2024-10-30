@@ -10,6 +10,7 @@ readme = "README.md"
 python = "^3.11"
 sudachipy = ">=0.6.8"
 sudachidict-full = "*"
+ipdb = "^0.13.13"
 
 [build-system]
 requires = ["poetry-core"]

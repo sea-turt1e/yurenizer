@@ -1,15 +1,24 @@
 import csv
 import json
 from collections import defaultdict
-from importlib import resources
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 
-import ipdb
+from entities import (
+    AlphabetAbbreviation,
+    AlphabetNotation,
+    Expansion,
+    FlgOption,
+    JapaneseAbbreviation,
+    Missspelling,
+    OrthographicVariation,
+    Taigen,
+    Yougen,
+)
 from sudachipy import dictionary, tokenizer
 
 
-class SudachiSynonymNormalizer:
-    def __init__(self, custom_synonym_file: str = None):
+class SynonymNormalizer:
+    def __init__(self, custom_synonym_file: Optional[str] = None) -> None:
         """
         SudachiDictの同義語辞書を使用した表記ゆれ統一ツールの初期化
 
@@ -31,7 +40,7 @@ class SudachiSynonymNormalizer:
         if custom_synonym_file:
             self.load_custom_synonyms(custom_synonym_file)
 
-    def load_sudachi_synonyms(self, synonym_file: str = "synonyms.txt"):
+    def load_sudachi_synonyms(self, synonym_file: str = "yurenizer/data/synonyms.txt"):
         """
         SudachiDictのsynonyms.txtから同義語情報を読み込む
         """
@@ -55,7 +64,6 @@ class SudachiSynonymNormalizer:
                     "lemma": line[8],  # 見出し語
                 },
             )
-        ipdb.set_trace()
 
     def load_custom_synonyms(self, file_path: str):
         """
@@ -104,7 +112,31 @@ class SudachiSynonymNormalizer:
                     return standard
         return word
 
-    def normalize_text(self, text: str) -> str:
+    def normalize(
+        self,
+        has_taigen: Taigen = Taigen.INCLUDE,
+        has_yougen: Yougen = Taigen.EXCLUDE,
+        expansion: Expansion = Expansion.FROM_ANOTHER,
+        alphabet_abbreviation: AlphabetAbbreviation = AlphabetAbbreviation.ENABLE,
+        japanese_abbreviation: JapaneseAbbreviation = JapaneseAbbreviation.ENABLE,
+        alphabet_notation: AlphabetNotation = AlphabetNotation.ENABLE,
+        orthographic_variation: OrthographicVariation = OrthographicVariation.ENABLE,
+        missspelling: Missspelling = Missspelling.ENABLE,
+    ):
+        flg_option = FlgOption(
+            yougen=has_yougen,
+            taigen=has_taigen,
+            expansion=expansion,
+            alphabet_abbreviation=alphabet_abbreviation,
+            japanese_abbreviation=japanese_abbreviation,
+            alphabet_notation=alphabet_notation,
+            orthographic_variation=orthographic_variation,
+            missspelling=missspelling,
+        )
+
+        return self.__normalize_text(flg_option=flg_option)
+
+    def __normalize_text(self, text: str, **flg_option: FlgOption) -> str:
         """
         テキストの表記ゆれと同義語を統一する
 
@@ -130,6 +162,18 @@ class SudachiSynonymNormalizer:
             normalized_parts.append(norm_form)
 
         return "".join(normalized_parts)
+
+    def tokenize(self, text: str) -> List[str]:
+        """
+        テキストを形態素解析する
+
+        Args:
+            text: 形態素解析する文字列
+        Returns:
+            形態素のリスト
+        """
+        tokens = self.tokenizer_obj.tokenize(text, self.mode)
+        return [token for token in tokens]
 
     def get_synonyms(self, word: str) -> Set[str]:
         """
@@ -184,21 +228,24 @@ class SudachiSynonymNormalizer:
 # 使用例
 if __name__ == "__main__":
     # 正規化ツールの初期化
-    normalizer = SudachiSynonymNormalizer()
+    normalizer = SynonymNormalizer()
 
     # テスト用テキスト
     test_text = "バス停で待機する。スマホを確認する。"
 
-    # テキストの正規化
-    normalized = normalizer.normalize_text(test_text)
-    print(f"正規化結果: {normalized}")
+    morphemes = normalizer.tokenize(test_text)
+    print(morphemes)
 
-    # 異形の分析
-    variants = normalizer.analyze_variants(test_text)
-    print("\n異形分析結果:")
-    print(json.dumps(variants, ensure_ascii=False, indent=2))
+    # # テキストの正規化
+    # normalized = normalizer.normalize_text(test_text)
+    # print(f"正規化結果: {normalized}")
 
-    # 特定の単語の同義語を取得
-    word = "待機"
-    synonyms = normalizer.get_synonyms(word)
-    print(f"\n「{word}」の同義語: {synonyms}")
+    # # 異形の分析
+    # variants = normalizer.analyze_variants(test_text)
+    # print("\n異形分析結果:")
+    # print(json.dumps(variants, ensure_ascii=False, indent=2))
+
+    # # 特定の単語の同義語を取得
+    # word = "待機"
+    # synonyms = normalizer.get_synonyms(word)
+    # print(f"\n「{word}」の同義語: {synonyms}")
