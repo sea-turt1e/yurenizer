@@ -3,6 +3,7 @@ import json
 from collections import defaultdict
 from typing import Dict, List, Optional, Set
 
+import ipdb
 from entities import (
     AlphabetAbbreviation,
     AlphabetNotation,
@@ -14,7 +15,7 @@ from entities import (
     Taigen,
     Yougen,
 )
-from sudachipy import dictionary, tokenizer
+from sudachipy import Morpheme, dictionary, tokenizer
 
 
 class SynonymNormalizer:
@@ -26,15 +27,21 @@ class SynonymNormalizer:
             custom_synonym_file: 追加の同義語定義ファイル（任意）
         """
         # Sudachi初期化
-        self.tokenizer_obj = dictionary.Dictionary().create()
+        sudachi_dic = dictionary.Dictionary()
+        self.tokenizer_obj = sudachi_dic.create()
         self.mode = tokenizer.Tokenizer.SplitMode.C
+
+        # 品詞マッチ
+        self.taigen_matcher = sudachi_dic.pos_matcher(lambda x: x[0] == "名詞")
+        self.yougen_matcher = sudachi_dic.pos_matcher(lambda x: x[0] in ["動詞", "形容詞"])
 
         # 同義語辞書の初期化
         self.synonym_dict: Dict[str, Set[str]] = {}
         self.group_dict: Dict[str, str] = {}  # 単語から同義語グループIDへのマッピング
 
         # SudachiDictの同義語ファイルを読み込み
-        self.load_sudachi_synonyms()
+        synonyms = self.load_sudachi_synonyms()
+        self.synonyms = {int(k): v for k, v in synonyms.items()}
 
         # カスタム同義語の読み込み
         if custom_synonym_file:
@@ -48,22 +55,23 @@ class SynonymNormalizer:
             reader = csv.reader(f)
             data = [row for row in reader]
 
-        synonyms = defaultdict(dict)
+        synonyms = defaultdict(list)
         for line in data:
             if not line:
                 continue
-            synonyms[line[0]] = (
+            synonyms[line[0]].append(
                 {
-                    "taigen_or_yougen": line[1],  # Taigen or Yougen(体言or用言)
-                    "flg_expansion": line[2],  # 展開制御フラグ
-                    "lexeme_id": line[3],  # グループ内の語彙素番号
-                    "word_form": line[4],  # 同一語彙素内での語形種別
-                    "abbreviation": line[5],  # 略語
-                    "spelling_inconsistencies": line[6],  # 表記揺れ情報
+                    "taigen_or_yougen": int(line[1]),  # Taigen or Yougen(体言or用言)
+                    "flg_expansion": int(line[2]),  # 展開制御フラグ
+                    "lexeme_id": int(line[3].split("/")[0]),  # グループ内の語彙素番号
+                    "word_form": int(line[4]),  # 同一語彙素内での語形種別
+                    "abbreviation": int(line[5]),  # 略語
+                    "spelling_inconsistencies": int(line[6]),  # 表記揺れ情報
                     "field": line[7],  # 分野情報
                     "lemma": line[8],  # 見出し語
-                },
+                }
             )
+        return synonyms
 
     def load_custom_synonyms(self, file_path: str):
         """
@@ -94,26 +102,29 @@ class SynonymNormalizer:
         except Exception as e:
             print(f"カスタム同義語ファイル読み込みエラー: {e}")
 
-    def get_standard_form(self, word: str) -> str:
+    def get_standard_form(self, morpheme: Morpheme, expansion: Expansion) -> str:
         """
-        単語の標準形を取得
+        単語の代表表記を取得
 
         Args:
-            word: 対象の単語
+            morpheme: 形態素情報
+            expansion: 同義語展開の制御フラグ
         Returns:
             標準形（同義語が見つからない場合は元の単語）
         """
         # グループ辞書から同義語グループを探す
-        group_id = self.group_dict.get(word)
-        if group_id:
-            # 同じグループに属する単語から標準形を探す
-            for standard, synonyms in self.synonym_dict.items():
-                if word in synonyms:
-                    return standard
-        return word
+        synonym_group = self.synonyms[morpheme.synonym_group_ids()[0]]
+        if synonym_group:
+            if expansion == Expansion.ANY:
+                return synonym_group[0]["lemma"]
+            elif expansion == Expansion.FROM_ANOTHER:
+                if {s["lemma"]: s["flg_expansion"] for s in synonym_group}.get(morpheme.normalized_form()) == 0:
+                    return synonym_group[0]["lemma"]
+        return morpheme.normalized_form()
 
     def normalize(
         self,
+        text: str,
         has_taigen: Taigen = Taigen.INCLUDE,
         has_yougen: Yougen = Taigen.EXCLUDE,
         expansion: Expansion = Expansion.FROM_ANOTHER,
@@ -134,9 +145,9 @@ class SynonymNormalizer:
             missspelling=missspelling,
         )
 
-        return self.__normalize_text(flg_option=flg_option)
+        return self.__normalize_text(text=text, flg_option=flg_option)
 
-    def __normalize_text(self, text: str, **flg_option: FlgOption) -> str:
+    def __normalize_text(self, text: str, flg_option: FlgOption) -> str:
         """
         テキストの表記ゆれと同義語を統一する
 
@@ -145,25 +156,89 @@ class SynonymNormalizer:
         Returns:
             正規化された文字列
         """
-        tokens = self.tokenizer_obj.tokenize(text, self.mode)
+        morphemes = self.get_morphemes(text)
         normalized_parts = []
+        for morpheme in morphemes:
+            self.normalize_word(morpheme, flg_option)
 
-        for token in tokens:
-            # 基本的な表記ゆれの正規化
-            norm_form = token.normalized_form()
+    def normalize_word(self, morpheme: Morpheme, flg_option: FlgOption) -> str:
+        """
+        単語の表記ゆれと同義語を統一する
 
-            # 品詞情報の取得
-            pos = token.part_of_speech()
+        Args:
+            morpheme: 形態素情報
+            flg_option: 正規化のオプション
+        Returns:
+            正規化された文字列
+        """
+        flg_normalize = False
+        if self.__flg_normalize_by_pos(morpheme, flg_option):
+            ipdb.set_trace()
+            # TODO: 判定の仕方を考える。
+            if self.__flg_normalize_by_alphabet_abbreviation(morpheme, flg_option):
+                flg_normalize = True
+            elif self.__flg_normalize_by_japanese_abbreviation(morpheme, flg_option):
+                flg_normalize = True
+            elif self.__flg_normalize_by_alphabet_notation(morpheme, flg_option):
+                flg_normalize = True
+            elif self.__flg_normalize_by_orthographic_variation(morpheme, flg_option):
+                flg_normalize = True
+            elif self.__flg_normalize_by_missspelling(morpheme, flg_option):
+                flg_normalize = True
 
-            # 内容語の場合のみ同義語変換を適用
-            if pos[0] in ["名詞", "動詞", "形容詞"]:
-                norm_form = self.get_standard_form(norm_form)
+        if flg_normalize:
+            if flg_option.expansion in (Expansion.ANY, Expansion.FROM_ANOTHER):
+                # 同義語グループのIDsを取得
+                synonym_group_ids = morpheme.synonym_group_ids()
+                if len(synonym_group_ids) > 1:
+                    return morpheme.normalized_form()
+                # 同義語展開
+                return self.get_standard_form(morpheme, flg_option.expansion)
+        return morpheme.normalized_form()
 
-            normalized_parts.append(norm_form)
+    def __flg_normalize_by_pos(self, morpheme: Morpheme, flg_option: FlgOption) -> bool:
+        """
+        品詞情報によって、正規化するかどうかを判断する
 
-        return "".join(normalized_parts)
+        Args:
+            morpheme: 形態素情報
+            flg_option: 正規化のオプション
+        Returns:
+            正規化する場合はTrue, しない場合はFalse
+        """
+        flg = False
+        if flg_option.taigen == Taigen.INCLUDE and self.taigen_matcher(morpheme):
+            return True
+        if flg_option.yougen == Yougen.INCLUDE and self.yougen_matcher(morpheme):
+            return True
+        return flg
+
+    def __flg_normalize_by_alphabet_abbreviation(self, morpheme: Morpheme, flg_option: FlgOption) -> bool:
+        """
+        アルファベットの略語を名寄せするかどうかを判断する
+
+        Args:
+            morpheme: 形態素情報
+            flg_option: 正規化のオプション
+        Returns:
+            正規化する場合はTrue, しない場合はFalse
+        """
+        # morpheme.surface()がアルファベットかどうか判断
+        if flg_option.alphabet_abbreviation == AlphabetAbbreviation.ENABLE and morpheme.surface().isascii():
+            return True
+        return False
 
     def tokenize(self, text: str) -> List[str]:
+        """
+        テキストを形態素解析する
+
+        Args:
+            text: 形態素解析する文字列
+        Returns:
+            形態素のリスト
+        """
+
+    def get_morphemes(self, text: str) -> List[str]:
         """
         テキストを形態素解析する
 
@@ -231,9 +306,11 @@ if __name__ == "__main__":
     normalizer = SynonymNormalizer()
 
     # テスト用テキスト
-    test_text = "バス停で待機する。スマホを確認する。"
+    text = "alphabet曖昧なバス停で待機する。スマホを確認する。"
 
-    morphemes = normalizer.tokenize(test_text)
+    morphemes = normalizer.normalize(text)
+    for morpheme in morphemes:
+        normalizer.flg_normalize_by_alphabet_abbreviation(morpheme, FlgOption)
     print(morphemes)
 
     # # テキストの正規化
