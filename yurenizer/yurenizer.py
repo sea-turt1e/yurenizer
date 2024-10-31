@@ -120,7 +120,7 @@ class SynonymNormalizer:
             elif expansion == Expansion.FROM_ANOTHER:
                 if {s["lemma"]: s["flg_expansion"] for s in synonym_group}.get(morpheme.normalized_form()) == 0:
                     return synonym_group[0]["lemma"]
-        return morpheme.normalized_form()
+        return morpheme.surface()
 
     def normalize(
         self,
@@ -159,7 +159,8 @@ class SynonymNormalizer:
         morphemes = self.get_morphemes(text)
         normalized_parts = []
         for morpheme in morphemes:
-            self.normalize_word(morpheme, flg_option)
+            normalized_parts.append(self.normalize_word(morpheme, flg_option))
+        return "".join(normalized_parts)
 
     def normalize_word(self, morpheme: Morpheme, flg_option: FlgOption) -> str:
         """
@@ -173,8 +174,6 @@ class SynonymNormalizer:
         """
         flg_normalize = False
         if self.__flg_normalize_by_pos(morpheme, flg_option):
-            ipdb.set_trace()
-            # TODO: 判定の仕方を考える。
             if self.__flg_normalize_by_alphabet_abbreviation(morpheme, flg_option):
                 flg_normalize = True
             elif self.__flg_normalize_by_japanese_abbreviation(morpheme, flg_option):
@@ -194,7 +193,7 @@ class SynonymNormalizer:
                     return morpheme.normalized_form()
                 # 同義語展開
                 return self.get_standard_form(morpheme, flg_option.expansion)
-        return morpheme.normalized_form()
+        return morpheme.surface()
 
     def __flg_normalize_by_pos(self, morpheme: Morpheme, flg_option: FlgOption) -> bool:
         """
@@ -223,9 +222,102 @@ class SynonymNormalizer:
         Returns:
             正規化する場合はTrue, しない場合はFalse
         """
-        # morpheme.surface()がアルファベットかどうか判断
         if flg_option.alphabet_abbreviation == AlphabetAbbreviation.ENABLE and morpheme.surface().isascii():
-            return True
+            synonym_group_ids = morpheme.synonym_group_ids()
+            if synonym_group_ids:
+                synonym_group = self.synonyms[synonym_group_ids[0]]
+                abbreviation_id = next(
+                    (item["abbreviation"] for item in synonym_group if item["lemma"] == morpheme.surface()), None
+                )
+                if abbreviation_id == 1:
+                    return True
+        return False
+
+    def __flg_normalize_by_japanese_abbreviation(self, morpheme: Morpheme, flg_option: FlgOption) -> bool:
+        """
+        日本語の略語を名寄せするかどうかを判断する
+
+        Args:
+            morpheme: 形態素情報
+            flg_option: 正規化のオプション
+        Returns:
+            正規化する場合はTrue, しない場合はFalse
+        """
+        if flg_option.japanese_abbreviation == JapaneseAbbreviation.ENABLE and not morpheme.surface().isascii():
+            synonym_group_ids = morpheme.synonym_group_ids()
+            if synonym_group_ids:
+                synonym_group = self.synonyms[synonym_group_ids[0]]
+                abbreviation_id = next(
+                    (item["abbreviation"] for item in synonym_group if item["lemma"] == morpheme.surface()), None
+                )
+                if abbreviation_id == 2:
+                    return True
+        return False
+
+    def __flg_normalize_by_alphabet_notation(self, morpheme: Morpheme, flg_option: FlgOption) -> bool:
+        """
+        アルファベットの表記揺れを名寄せするかどうかを判断する
+
+        Args:
+            morpheme: 形態素情報
+            flg_option: 正規化のオプション
+        Returns:
+            正規化する場合はTrue, しない場合はFalse
+        """
+        if flg_option.alphabet_notation == AlphabetNotation.ENABLE and morpheme.surface().isascii():
+            synonym_group_ids = morpheme.synonym_group_ids()
+            if synonym_group_ids:
+                synonym_group = self.synonyms[synonym_group_ids[0]]
+                spelling_inconsistencies = next(
+                    (item["spelling_inconsistencies"] for item in synonym_group if item["lemma"] == morpheme.surface()),
+                    None,
+                )
+                if spelling_inconsistencies == 1:
+                    return True
+        return False
+
+    def __flg_normalize_by_orthographic_variation(self, morpheme: Morpheme, flg_option: FlgOption) -> bool:
+        """
+        異表記を名寄せするかどうかを判断する
+
+        Args:
+            morpheme: 形態素情報
+            flg_option: 正規化のオプション
+        Returns:
+            正規化する場合はTrue, しない場合はFalse
+        """
+        if flg_option.orthographic_variation == OrthographicVariation.ENABLE:
+            synonym_group_ids = morpheme.synonym_group_ids()
+            if synonym_group_ids:
+                synonym_group = self.synonyms[synonym_group_ids[0]]
+                spelling_inconsistencies = next(
+                    (item["spelling_inconsistencies"] for item in synonym_group if item["lemma"] == morpheme.surface()),
+                    None,
+                )
+                if spelling_inconsistencies == 2:
+                    return True
+        return False
+
+    def __flg_normalize_by_missspelling(self, morpheme: Morpheme, flg_option: FlgOption) -> bool:
+        """
+        誤表記を名寄せするかどうかを判断する
+
+        Args:
+            morpheme: 形態素情報
+            flg_option: 正規化のオプション
+        Returns:
+            正規化する場合はTrue, しない場合はFalse
+        """
+        if flg_option.missspelling == Missspelling.ENABLE:
+            synonym_group_ids = morpheme.synonym_group_ids()
+            if synonym_group_ids:
+                synonym_group = self.synonyms[synonym_group_ids[0]]
+                spelling_inconsistencies = next(
+                    (item["spelling_inconsistencies"] for item in synonym_group if item["lemma"] == morpheme.surface()),
+                    None,
+                )
+                if spelling_inconsistencies == 3:
+                    return True
         return False
 
     def tokenize(self, text: str) -> List[str]:
@@ -250,54 +342,54 @@ class SynonymNormalizer:
         tokens = self.tokenizer_obj.tokenize(text, self.mode)
         return [token for token in tokens]
 
-    def get_synonyms(self, word: str) -> Set[str]:
-        """
-        単語の同義語セットを取得
+    # def get_synonyms(self, word: str) -> Set[str]:
+    #     """
+    #     単語の同義語セットを取得
 
-        Args:
-            word: 対象の単語
-        Returns:
-            同義語のセット
-        """
-        # グループ辞書から同義語グループを探す
-        group_id = self.group_dict.get(word)
-        if group_id:
-            # 同じグループに属する全ての単語を返す
-            for standard, synonyms in self.synonym_dict.items():
-                if word in synonyms:
-                    return synonyms
-        return set()
+    #     Args:
+    #         word: 対象の単語
+    #     Returns:
+    #         同義語のセット
+    #     """
+    #     # グループ辞書から同義語グループを探す
+    #     group_id = self.group_dict.get(word)
+    #     if group_id:
+    #         # 同じグループに属する全ての単語を返す
+    #         for standard, synonyms in self.synonym_dict.items():
+    #             if word in synonyms:
+    #                 return synonyms
+    #     return set()
 
-    def analyze_variants(self, text: str) -> List[Dict[str, any]]:
-        """
-        テキスト中の表記ゆれと同義語を分析
+    # def analyze_variants(self, text: str) -> List[Dict[str, any]]:
+    #     """
+    #     テキスト中の表記ゆれと同義語を分析
 
-        Args:
-            text: 分析する文字列
-        Returns:
-            異形情報のリスト
-        """
-        tokens = self.tokenizer_obj.tokenize(text, self.mode)
-        variants = []
+    #     Args:
+    #         text: 分析する文字列
+    #     Returns:
+    #         異形情報のリスト
+    #     """
+    #     tokens = self.tokenizer_obj.tokenize(text, self.mode)
+    #     variants = []
 
-        for token in tokens:
-            surface = token.surface()
-            normalized = token.normalized_form()
-            standard = self.get_standard_form(normalized)
-            synonyms = self.get_synonyms(normalized)
+    #     for token in tokens:
+    #         surface = token.surface()
+    #         normalized = token.normalized_form()
+    #         standard = self.get_standard_form(normalized)
+    #         synonyms = self.get_synonyms(normalized)
 
-            if surface != standard or synonyms:
-                variant_info = {
-                    "surface": surface,
-                    "normalized": normalized,
-                    "standard": standard,
-                    "synonyms": list(synonyms),
-                    "part_of_speech": token.part_of_speech(),
-                    "group_id": self.group_dict.get(normalized),
-                }
-                variants.append(variant_info)
+    #         if surface != standard or synonyms:
+    #             variant_info = {
+    #                 "surface": surface,
+    #                 "normalized": normalized,
+    #                 "standard": standard,
+    #                 "synonyms": list(synonyms),
+    #                 "part_of_speech": token.part_of_speech(),
+    #                 "group_id": self.group_dict.get(normalized),
+    #             }
+    #             variants.append(variant_info)
 
-        return variants
+    #     return variants
 
 
 # 使用例
@@ -306,12 +398,10 @@ if __name__ == "__main__":
     normalizer = SynonymNormalizer()
 
     # テスト用テキスト
-    text = "alphabet曖昧なバス停で待機する。スマホを確認する。"
-
-    morphemes = normalizer.normalize(text)
-    for morpheme in morphemes:
-        normalizer.flg_normalize_by_alphabet_abbreviation(morpheme, FlgOption)
-    print(morphemes)
+    text = "alphabet曖昧なバス停で待機する。スマホをチェックcheckする。"  # TODO: チェックcheckが正規化されない
+    print(f"テキスト: {text}")
+    normalized_text = normalizer.normalize(text)
+    print(f"正規化結果: {normalized_text}")
 
     # # テキストの正規化
     # normalized = normalizer.normalize_text(test_text)
