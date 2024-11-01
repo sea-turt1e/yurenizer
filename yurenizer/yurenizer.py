@@ -27,7 +27,7 @@ class SynonymNormalizer:
             custom_synonym_file: 追加の同義語定義ファイル（任意）
         """
         # Sudachi初期化
-        sudachi_dic = dictionary.Dictionary()
+        sudachi_dic = dictionary.Dictionary(dict="full")  # TODO: sudachiの辞書を指定できるようにする
         self.tokenizer_obj = sudachi_dic.create()
         self.mode = tokenizer.Tokenizer.SplitMode.C
 
@@ -43,9 +43,9 @@ class SynonymNormalizer:
         synonyms = self.load_sudachi_synonyms()
         self.synonyms = {int(k): v for k, v in synonyms.items()}
 
-        # カスタム同義語の読み込み
-        if custom_synonym_file:
-            self.load_custom_synonyms(custom_synonym_file)
+        # # カスタム同義語の読み込み
+        # if custom_synonym_file:
+        #     self.load_custom_synonyms(custom_synonym_file)
 
     def load_sudachi_synonyms(self, synonym_file: str = "yurenizer/data/synonyms.txt"):
         """
@@ -73,34 +73,34 @@ class SynonymNormalizer:
             )
         return synonyms
 
-    def load_custom_synonyms(self, file_path: str):
-        """
-        カスタム同義語定義を読み込む
+    # def load_custom_synonyms(self, file_path: str):
+    #     """
+    #     カスタム同義語定義を読み込む
 
-        Args:
-            file_path: 同義語定義JSONファイルのパス
+    #     Args:
+    #         file_path: 同義語定義JSONファイルのパス
 
-        JSONフォーマット:
-        {
-            "標準形": ["同義語1", "同義語2", ...],
-            ...
-        }
-        """
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                custom_synonyms = json.load(f)
-                for standard, synonyms in custom_synonyms.items():
-                    if standard not in self.synonym_dict:
-                        self.synonym_dict[standard] = set()
-                    self.synonym_dict[standard].update(synonyms)
+    #     JSONフォーマット:
+    #     {
+    #         "標準形": ["同義語1", "同義語2", ...],
+    #         ...
+    #     }
+    #     """
+    #     try:
+    #         with open(file_path, "r", encoding="utf-8") as f:
+    #             custom_synonyms = json.load(f)
+    #             for standard, synonyms in custom_synonyms.items():
+    #                 if standard not in self.synonym_dict:
+    #                     self.synonym_dict[standard] = set()
+    #                 self.synonym_dict[standard].update(synonyms)
 
-                    # グループ辞書にも追加
-                    group_id = f"custom_{standard}"
-                    for word in [standard] + synonyms:
-                        self.group_dict[word] = group_id
+    #                 # グループ辞書にも追加
+    #                 group_id = f"custom_{standard}"
+    #                 for word in [standard] + synonyms:
+    #                     self.group_dict[word] = group_id
 
-        except Exception as e:
-            print(f"カスタム同義語ファイル読み込みエラー: {e}")
+    #     except Exception as e:
+    #         print(f"カスタム同義語ファイル読み込みエラー: {e}")
 
     def get_standard_form(self, morpheme: Morpheme, expansion: Expansion) -> str:
         """
@@ -113,7 +113,11 @@ class SynonymNormalizer:
             標準形（同義語が見つからない場合は元の単語）
         """
         # グループ辞書から同義語グループを探す
-        synonym_group = self.synonyms[morpheme.synonym_group_ids()[0]]
+        synonym_group_ids = morpheme.synonym_group_ids()
+        if len(synonym_group_ids) > 0:
+            synonym_group = self.synonyms[synonym_group_ids[0]]
+        else:
+            return morpheme.surface()
         if synonym_group:
             if expansion == Expansion.ANY:
                 return synonym_group[0]["lemma"]
@@ -174,6 +178,7 @@ class SynonymNormalizer:
         """
         flg_normalize = False
         if self.__flg_normalize_by_pos(morpheme, flg_option):
+            # 各条件をチェック。一つでもFalseがあれば正規化しない
             if self.__flg_normalize_by_alphabet_abbreviation(morpheme, flg_option):
                 flg_normalize = True
             elif self.__flg_normalize_by_japanese_abbreviation(morpheme, flg_option):
@@ -184,13 +189,14 @@ class SynonymNormalizer:
                 flg_normalize = True
             elif self.__flg_normalize_by_missspelling(morpheme, flg_option):
                 flg_normalize = True
-
+            elif self.__flg_normalize_by_expansion(morpheme, flg_option):
+                flg_normalize = True
         if flg_normalize:
             if flg_option.expansion in (Expansion.ANY, Expansion.FROM_ANOTHER):
                 # 同義語グループのIDsを取得
                 synonym_group_ids = morpheme.synonym_group_ids()
                 if len(synonym_group_ids) > 1:
-                    return morpheme.normalized_form()
+                    return morpheme.surface()
                 # 同義語展開
                 return self.get_standard_form(morpheme, flg_option.expansion)
         return morpheme.surface()
@@ -320,15 +326,28 @@ class SynonymNormalizer:
                     return True
         return False
 
-    def tokenize(self, text: str) -> List[str]:
+    def __flg_normalize_by_expansion(self, morpheme: Morpheme, flg_option: FlgOption) -> bool:
         """
-        テキストを形態素解析する
+        同義語展開の制御フラグによって、正規化するかどうかを判断する
 
         Args:
-            text: 形態素解析する文字列
+            morpheme: 形態素情報
+            flg_option: 正規化のオプション
         Returns:
-            形態素のリスト
+            正規化する場合はTrue, しない場合はFalse
         """
+        if flg_option.expansion == Expansion.ANY:
+            return True
+        if flg_option.expansion == Expansion.FROM_ANOTHER:
+            synonym_group_ids = morpheme.synonym_group_ids()
+            if synonym_group_ids:
+                synonym_group = self.synonyms[synonym_group_ids[0]]
+                flg_expansion = next(
+                    (item["flg_expansion"] for item in synonym_group if item["lemma"] == morpheme.surface()), None
+                )
+                if flg_expansion == 0:
+                    return True
+        return False
 
     def get_morphemes(self, text: str) -> List[str]:
         """
@@ -398,21 +417,20 @@ if __name__ == "__main__":
     normalizer = SynonymNormalizer()
 
     # テスト用テキスト
-    text = "alphabet曖昧なバス停で待機する。スマホをチェックcheckする。"  # TODO: チェックcheckが正規化されない
-    print(f"テキスト: {text}")
-    normalized_text = normalizer.normalize(text)
-    print(f"正規化結果: {normalized_text}")
+    texts = [
+        "alphabet曖昧なバス停で待機する。スマホを確認する。",
+        "チェックリストを行う。",
+        "確認を行う",
+        "checkを行う。",
+    ]
+    print("FROM_ANOTHERの場合")
+    for text in texts:
+        print(f"テキスト:　 {text}")
+        normalized_text = normalizer.normalize(text, expansion=Expansion.FROM_ANOTHER)
+        print(f"正規化結果: {normalized_text}")
 
-    # # テキストの正規化
-    # normalized = normalizer.normalize_text(test_text)
-    # print(f"正規化結果: {normalized}")
-
-    # # 異形の分析
-    # variants = normalizer.analyze_variants(test_text)
-    # print("\n異形分析結果:")
-    # print(json.dumps(variants, ensure_ascii=False, indent=2))
-
-    # # 特定の単語の同義語を取得
-    # word = "待機"
-    # synonyms = normalizer.get_synonyms(word)
-    # print(f"\n「{word}」の同義語: {synonyms}")
+    print("ANYの場合")
+    for text in texts:
+        print(f"テキスト:　 {text}")
+        normalized_text = normalizer.normalize(text, expansion=Expansion.ANY)
+        print(f"正規化結果: {normalized_text}")
