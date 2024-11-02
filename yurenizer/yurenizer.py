@@ -5,11 +5,11 @@ from typing import Dict, List, Optional, Set, Union
 
 import ipdb
 from entities import (
-    AlphabetAbbreviation,
+    AlphabeticAbbreviation,
     Alphabet,
     Expansion,
     FlgInput,
-    JapaneseAbbreviation,
+    NonAlphabeticAbbreviation,
     Missspelling,
     OrthographicVariation,
     Taigen,
@@ -135,9 +135,9 @@ class SynonymNormalizer:
         taigen: Taigen = Taigen.INCLUDE,
         yougen: Yougen = Taigen.EXCLUDE,
         expansion: Expansion = Expansion.FROM_ANOTHER,
-        japanese_abbreviation: JapaneseAbbreviation = JapaneseAbbreviation.ENABLE,
         alphabet: Alphabet = Alphabet.ENABLE,
-        alphabet_abbreviation: AlphabetAbbreviation = AlphabetAbbreviation.ENABLE,
+        alphabetic_abbreviation: AlphabeticAbbreviation = AlphabeticAbbreviation.ENABLE,
+        non_alphabetic_abbreviation: NonAlphabeticAbbreviation = NonAlphabeticAbbreviation.ENABLE,
         orthographic_variation: OrthographicVariation = OrthographicVariation.ENABLE,
         missspelling: Missspelling = Missspelling.ENABLE,
     ):
@@ -145,9 +145,9 @@ class SynonymNormalizer:
             yougen=yougen,
             taigen=taigen,
             expansion=expansion,
-            japanese_abbreviation=japanese_abbreviation,
             alphabet=alphabet,
-            alphabet_abbreviation=alphabet_abbreviation,
+            alphabetic_abbreviation=alphabetic_abbreviation,
+            non_alphabetic_abbreviation=non_alphabetic_abbreviation,
             orthographic_variation=orthographic_variation,
             missspelling=missspelling,
         )
@@ -181,7 +181,7 @@ class SynonymNormalizer:
         """
         flg_normalize = False  # 代表表記するかどうか
         if self.__flg_normalize_by_pos(morpheme, flg_input):
-            if self.__flg_normalize_by_alphabet_abbreviation2alphabet(morpheme, flg_input):
+            if self.__flg_normalize_by_alphabetic_abbreviation2alphabet(morpheme, flg_input):
                 flg_normalize = True
             elif self.__flg_normalize_by_japanese_abbreviation(morpheme, flg_input):
                 flg_normalize = True
@@ -222,7 +222,7 @@ class SynonymNormalizer:
             return True
         return flg
 
-    def __flg_normalize_by_alphabet_abbreviation2alphabet(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
+    def __flg_normalize_by_alphabetic_abbreviation2alphabet(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
         """
         アルファベットの略語をアルファベット表記するかを判断する
 
@@ -232,7 +232,7 @@ class SynonymNormalizer:
         Returns:
             正規化する場合はTrue, しない場合はFalse
         """
-        if flg_input.alphabet_abbreviation == AlphabetAbbreviation.ENABLE and morpheme.surface().isascii():
+        if flg_input.alphabetic_abbreviation == AlphabeticAbbreviation.ENABLE and morpheme.surface().isascii():
             abbreviation_id = self.get_synonym_value_from_morpheme(morpheme, SynonymField.ABBREVIATION)
             if abbreviation_id == Abbreviation.ALPHABET.value:
                 return True
@@ -248,7 +248,10 @@ class SynonymNormalizer:
         Returns:
             正規化する場合はTrue, しない場合はFalse
         """
-        if flg_input.japanese_abbreviation == JapaneseAbbreviation.ENABLE and not morpheme.surface().isascii():
+        if (
+            flg_input.non_alphabetic_abbreviation == NonAlphabeticAbbreviation.ENABLE
+            and not morpheme.surface().isascii()
+        ):
             abbreviation_id = self.get_synonym_value_from_morpheme(morpheme, SynonymField.ABBREVIATION)
             if abbreviation_id == Abbreviation.NOT_ALPHABET.value:
                 return True
@@ -404,9 +407,9 @@ if __name__ == "__main__":
         taigen=Taigen.INCLUDE,
         yougen=Yougen.EXCLUDE,
         expansion=Expansion.FROM_ANOTHER,
-        japanese_abbreviation=JapaneseAbbreviation.ENABLE,
+        non_alphabetic_abbreviation=NonAlphabeticAbbreviation.ENABLE,
         alphabet=Alphabet.ENABLE,
-        alphabet_abbreviation=AlphabetAbbreviation.ENABLE,
+        alphabetic_abbreviation=AlphabeticAbbreviation.ENABLE,
         orthographic_variation=OrthographicVariation.ENABLE,
         missspelling=Missspelling.ENABLE,
     )
