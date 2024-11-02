@@ -14,8 +14,8 @@ from entities import (
     OrthographicVariation,
     Taigen,
     Yougen,
+    OtherLanguage,
     FlgExpantion,
-    WordForm,
     Abbreviation,
     SpellingInconsistency,
     SynonymField,
@@ -135,6 +135,7 @@ class SynonymNormalizer:
         taigen: Taigen = Taigen.INCLUDE,
         yougen: Yougen = Taigen.EXCLUDE,
         expansion: Expansion = Expansion.FROM_ANOTHER,
+        other_language: OtherLanguage = OtherLanguage.ENABLE,
         alphabet: Alphabet = Alphabet.ENABLE,
         alphabetic_abbreviation: AlphabeticAbbreviation = AlphabeticAbbreviation.ENABLE,
         non_alphabetic_abbreviation: NonAlphabeticAbbreviation = NonAlphabeticAbbreviation.ENABLE,
@@ -145,6 +146,7 @@ class SynonymNormalizer:
             yougen=yougen,
             taigen=taigen,
             expansion=expansion,
+            other_language=other_language,
             alphabet=alphabet,
             alphabetic_abbreviation=alphabetic_abbreviation,
             non_alphabetic_abbreviation=non_alphabetic_abbreviation,
@@ -181,9 +183,11 @@ class SynonymNormalizer:
         """
         flg_normalize = False  # 代表表記するかどうか
         if self.__flg_normalize_by_pos(morpheme, flg_input):
-            if self.__flg_normalize_by_alphabetic_abbreviation2alphabet(morpheme, flg_input):
+            if self.__flg_normalize_other_language(morpheme, flg_input):
                 flg_normalize = True
-            elif self.__flg_normalize_by_japanese_abbreviation(morpheme, flg_input):
+            elif self.__flg_normalize_by_alphabetic_abbreviation2alphabet(morpheme, flg_input):
+                flg_normalize = True
+            elif self.__flg_normalize_by_non_alphabetic_abbreviation(morpheme, flg_input):
                 flg_normalize = True
             elif self.__flg_normalize_by_alphabet_notation(morpheme, flg_input):
                 flg_normalize = True
@@ -222,6 +226,20 @@ class SynonymNormalizer:
             return True
         return flg
 
+    def __flg_normalize_other_language(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
+        """
+        多言語を日本語にするかどうかを判断する
+
+        Args:
+            morpheme: 形態素情報
+            flg_input: 正規化のオプション
+        Returns:
+            正規化する場合はTrue, しない場合はFalse
+        """
+        if flg_input.other_language == OtherLanguage.ENABLE and not morpheme.surface().isascii():
+            return True
+        return False
+
     def __flg_normalize_by_alphabetic_abbreviation2alphabet(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
         """
         アルファベットの略語をアルファベット表記するかを判断する
@@ -238,7 +256,7 @@ class SynonymNormalizer:
                 return True
         return False
 
-    def __flg_normalize_by_japanese_abbreviation(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
+    def __flg_normalize_by_non_alphabetic_abbreviation(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
         """
         日本語の略語を名寄せするかどうかを判断する
 
@@ -407,9 +425,10 @@ if __name__ == "__main__":
         taigen=Taigen.INCLUDE,
         yougen=Yougen.EXCLUDE,
         expansion=Expansion.FROM_ANOTHER,
-        non_alphabetic_abbreviation=NonAlphabeticAbbreviation.ENABLE,
+        other_language=OtherLanguage.ENABLE,
         alphabet=Alphabet.ENABLE,
         alphabetic_abbreviation=AlphabeticAbbreviation.ENABLE,
+        non_alphabetic_abbreviation=NonAlphabeticAbbreviation.ENABLE,
         orthographic_variation=OrthographicVariation.ENABLE,
         missspelling=Missspelling.ENABLE,
     )
@@ -418,6 +437,7 @@ if __name__ == "__main__":
 
     # テスト用テキスト
     texts = [
+        "USA",
         "America",
         "alphabet曖昧なバス停で待機する。スマホを確認する。",
         "チェックリストを行う。",

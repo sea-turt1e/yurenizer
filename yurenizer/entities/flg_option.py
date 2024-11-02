@@ -23,6 +23,12 @@ class Expansion(Enum):
     NOT_ALL = "not_all"  # 常に展開に使用しない ※削除履歴として利用 (弊害語などが誤って再登録されるのを防ぐため)
 
 
+class OtherLanguage(Enum):
+    # 多言語を日本語へ名寄せするかどうかのフラグ
+    DISABLE = 0  # 多言語を日本語へ名寄せしない
+    ENABLE = 1  # 多言語を日本語へ名寄せする
+
+
 class AlphabeticAbbreviation(Enum):
     # アルファベットの略語を名寄せするかどうかのフラグ
     DISABLE = 0  # アルファベットの略語名寄せを行わない
@@ -58,6 +64,7 @@ class FlgInput:
     yougen: Yougen = Yougen.EXCLUDE
     taigen: Taigen = Taigen.INCLUDE
     expansion: Expansion = Expansion.FROM_ANOTHER
+    other_language: OtherLanguage = OtherLanguage.ENABLE
     alphabet: Alphabet = Alphabet.ENABLE
     alphabetic_abbreviation: AlphabeticAbbreviation = AlphabeticAbbreviation.ENABLE
     non_alphabetic_abbreviation: NonAlphabeticAbbreviation = NonAlphabeticAbbreviation.ENABLE
