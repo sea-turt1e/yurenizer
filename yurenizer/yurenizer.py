@@ -175,11 +175,11 @@ class SynonymNormalizer:
             正規化された文字列
         """
         flg_normalize = False  # 代表表記するかどうか
+        flg_expansion = False  # 同義語展開するかどうか
         flg_alphabet_abbreviation2alphabet = False  # アルファベットの略語をアルファベット表記にするかどうか
         if self.__flg_normalize_by_pos(morpheme, flg_input):
             if self.__flg_normalize_by_alphabet_abbreviation2alphabet(morpheme, flg_input):
                 flg_alphabet_abbreviation2alphabet = True
-
             if self.__flg_normalize_by_japanese_abbreviation(morpheme, flg_input):
                 flg_normalize = True
             elif self.__flg_normalize_by_alphabet_notation(morpheme, flg_input):
@@ -188,11 +188,12 @@ class SynonymNormalizer:
                 flg_normalize = True
             elif self.__flg_normalize_by_missspelling(morpheme, flg_input):
                 flg_normalize = True
-            elif self.__flg_normalize_by_expansion(morpheme, flg_input):
-                flg_normalize = True
-        # if flg_alphabet_abbreviation2alphabet and not flg_normalize:
-        #     return self.__alphabet_abbreviation2alphabet(morpheme)
-        if flg_normalize:
+            if self.__flg_normalize_by_expansion(morpheme, flg_input):
+                flg_expansion = True
+        ipdb.set_trace()  # TODO: 英語略語 -> 英語 -> 代表表記がおかしい。テストを書く
+        if flg_alphabet_abbreviation2alphabet and flg_expansion:
+            return self.__alphabet_abbreviation2alphabet(morpheme)
+        elif flg_normalize and flg_expansion:
             if flg_input.expansion in (Expansion.ANY, Expansion.FROM_ANOTHER):
                 # 同義語グループのIDsを取得
                 synonym_group_ids = morpheme.synonym_group_ids()
@@ -228,7 +229,15 @@ class SynonymNormalizer:
         Returns:
             アルファベット表記
         """
-        abbreviation_id = self.get_synonym_value_from_morpheme(morpheme, SynonymField.ABBREVIATION)
+        synonym_group = self.get_synonym_group(morpheme)
+        return next(
+            (
+                s.lemma
+                for s in synonym_group
+                if s.word_form == 1 and s.abbreviation == 0 and s.spelling_inconsistency == 0
+            ),
+            morpheme.surface(),
+        )
 
     def __flg_normalize_by_alphabet_abbreviation2alphabet(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
         """
@@ -408,11 +417,22 @@ class SynonymNormalizer:
 
 # 使用例
 if __name__ == "__main__":
+    flg_input = FlgInput(
+        taigen=Taigen.INCLUDE,
+        yougen=Yougen.EXCLUDE,
+        expansion=Expansion.FROM_ANOTHER,
+        japanese_abbreviation=JapaneseAbbreviation.ENABLE,
+        alphabet=Alphabet.ENABLE,
+        alphabet_abbreviation=AlphabetAbbreviation.ENABLE,
+        orthographic_variation=OrthographicVariation.ENABLE,
+        missspelling=Missspelling.ENABLE,
+    )
     # 正規化ツールの初期化
     normalizer = SynonymNormalizer()
 
     # テスト用テキスト
     texts = [
+        "NLPはnatural language processingの略です。natural language processingは自然言語処理の略です。",
         "alphabet曖昧なバス停で待機する。スマホを確認する。",
         "チェックリストを行う。",
         "チェックを行う",
@@ -421,7 +441,7 @@ if __name__ == "__main__":
     print("FROM_ANOTHERの場合")
     for text in texts:
         print(f"テキスト:　 {text}")
-        normalized_text = normalizer.normalize(text, expansion=Expansion.FROM_ANOTHER)
+        normalized_text = normalizer.normalize(text, alphabet=Alphabet.ENABLE, expansion=Expansion.FROM_ANOTHER)
         print(f"正規化結果: {normalized_text}")
 
     print("ANYの場合")
