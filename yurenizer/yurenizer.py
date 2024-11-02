@@ -175,12 +175,10 @@ class SynonymNormalizer:
             正規化された文字列
         """
         flg_normalize = False  # 代表表記するかどうか
-        flg_expansion = False  # 同義語展開するかどうか
-        flg_alphabet_abbreviation2alphabet = False  # アルファベットの略語をアルファベット表記にするかどうか
         if self.__flg_normalize_by_pos(morpheme, flg_input):
             if self.__flg_normalize_by_alphabet_abbreviation2alphabet(morpheme, flg_input):
-                flg_alphabet_abbreviation2alphabet = True
-            if self.__flg_normalize_by_japanese_abbreviation(morpheme, flg_input):
+                flg_normalize = True
+            elif self.__flg_normalize_by_japanese_abbreviation(morpheme, flg_input):
                 flg_normalize = True
             elif self.__flg_normalize_by_alphabet_notation(morpheme, flg_input):
                 flg_normalize = True
@@ -188,12 +186,10 @@ class SynonymNormalizer:
                 flg_normalize = True
             elif self.__flg_normalize_by_missspelling(morpheme, flg_input):
                 flg_normalize = True
-            if self.__flg_normalize_by_expansion(morpheme, flg_input):
-                flg_expansion = True
-        ipdb.set_trace()  # TODO: 英語略語 -> 英語 -> 代表表記がおかしい。テストを書く
-        if flg_alphabet_abbreviation2alphabet and flg_expansion:
-            return self.__alphabet_abbreviation2alphabet(morpheme)
-        elif flg_normalize and flg_expansion:
+            elif self.__flg_normalize_by_expansion(morpheme, flg_input):
+                flg_normalize = True
+
+        if flg_normalize:
             if flg_input.expansion in (Expansion.ANY, Expansion.FROM_ANOTHER):
                 # 同義語グループのIDsを取得
                 synonym_group_ids = morpheme.synonym_group_ids()
@@ -201,6 +197,7 @@ class SynonymNormalizer:
                     return morpheme.surface()
                 # 同義語展開
                 return self.get_standard_form(morpheme, flg_input.expansion)
+
         return morpheme.surface()
 
     def __flg_normalize_by_pos(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
@@ -219,25 +216,6 @@ class SynonymNormalizer:
         if flg_input.yougen == Yougen.INCLUDE and self.yougen_matcher(morpheme):
             return True
         return flg
-
-    def __alphabet_abbreviation2alphabet(self, morpheme):
-        """
-        アルファベットの略語をアルファベット表記にする
-
-        Args:
-            morpheme: 形態素情報
-        Returns:
-            アルファベット表記
-        """
-        synonym_group = self.get_synonym_group(morpheme)
-        return next(
-            (
-                s.lemma
-                for s in synonym_group
-                if s.word_form == 1 and s.abbreviation == 0 and s.spelling_inconsistency == 0
-            ),
-            morpheme.surface(),
-        )
 
     def __flg_normalize_by_alphabet_abbreviation2alphabet(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
         """
@@ -432,7 +410,7 @@ if __name__ == "__main__":
 
     # テスト用テキスト
     texts = [
-        "NLPはnatural language processingの略です。natural language processingは自然言語処理の略です。",
+        "America",
         "alphabet曖昧なバス停で待機する。スマホを確認する。",
         "チェックリストを行う。",
         "チェックを行う",
@@ -441,7 +419,7 @@ if __name__ == "__main__":
     print("FROM_ANOTHERの場合")
     for text in texts:
         print(f"テキスト:　 {text}")
-        normalized_text = normalizer.normalize(text, alphabet=Alphabet.ENABLE, expansion=Expansion.FROM_ANOTHER)
+        normalized_text = normalizer.normalize(text, alphabet=Alphabet.DISABLE, expansion=Expansion.FROM_ANOTHER)
         print(f"正規化結果: {normalized_text}")
 
     print("ANYの場合")
