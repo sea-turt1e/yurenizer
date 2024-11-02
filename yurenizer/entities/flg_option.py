@@ -35,7 +35,7 @@ class JapaneseAbbreviation(Enum):
     ENABLE = 1  # 日本語の略語名寄せを行う
 
 
-class AlphabetNotation(Enum):
+class Alphabet(Enum):
     # アルファベットの表記揺れを名寄せするかどうかのフラグ
     DISABLE = 0  # アルファベットの表記揺れを名寄せしない
     ENABLE = 1  # アルファベットの表記揺れを名寄せする
@@ -54,12 +54,18 @@ class Missspelling(Enum):
 
 
 @dataclass
-class FlgOption:
+class FlgInput:
     yougen: Yougen = Yougen.EXCLUDE
     taigen: Taigen = Taigen.INCLUDE
     expansion: Expansion = Expansion.FROM_ANOTHER
-    alphabet_abbreviation: AlphabetAbbreviation = AlphabetAbbreviation.ENABLE
     japanese_abbreviation: JapaneseAbbreviation = JapaneseAbbreviation.ENABLE
-    alphabet_notation: AlphabetNotation = AlphabetNotation.ENABLE
+    alphabet: Alphabet = Alphabet.ENABLE
+    alphabet_abbreviation: AlphabetAbbreviation = AlphabetAbbreviation.ENABLE
     orthographic_variation: OrthographicVariation = OrthographicVariation.ENABLE
     missspelling: Missspelling = Missspelling.ENABLE
+
+
+@dataclass
+class FlgNormalize:
+    abbreviation: bool = True
+    notation: bool = True
