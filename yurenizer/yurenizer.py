@@ -14,6 +14,11 @@ from entities import (
     OrthographicVariation,
     Taigen,
     Yougen,
+    FlgExpantion,
+    WordForm,
+    Abbreviation,
+    SpellingInconsistency,
+    SynonymField,
     Synonym,
     SynonymField,
 )
@@ -229,7 +234,7 @@ class SynonymNormalizer:
         """
         if flg_input.alphabet_abbreviation == AlphabetAbbreviation.ENABLE and morpheme.surface().isascii():
             abbreviation_id = self.get_synonym_value_from_morpheme(morpheme, SynonymField.ABBREVIATION)
-            if abbreviation_id == 1:
+            if abbreviation_id == Abbreviation.ALPHABET.value:
                 return True
         return False
 
@@ -245,7 +250,7 @@ class SynonymNormalizer:
         """
         if flg_input.japanese_abbreviation == JapaneseAbbreviation.ENABLE and not morpheme.surface().isascii():
             abbreviation_id = self.get_synonym_value_from_morpheme(morpheme, SynonymField.ABBREVIATION)
-            if abbreviation_id == 2:
+            if abbreviation_id == Abbreviation.NOT_ALPHABET.value:
                 return True
         return False
 
@@ -261,7 +266,7 @@ class SynonymNormalizer:
         """
         if flg_input.alphabet == Alphabet.ENABLE and morpheme.surface().isascii():
             spelling_inconsistency = self.get_synonym_value_from_morpheme(morpheme, SynonymField.SPELLING_INCONSISTENCY)
-            if spelling_inconsistency == 1:
+            if spelling_inconsistency == SpellingInconsistency.ALPHABET.value:
                 return True
         return False
 
@@ -277,7 +282,7 @@ class SynonymNormalizer:
         """
         if flg_input.orthographic_variation == OrthographicVariation.ENABLE:
             spelling_inconsistency = self.get_synonym_value_from_morpheme(morpheme, SynonymField.SPELLING_INCONSISTENCY)
-            if spelling_inconsistency == 2:
+            if spelling_inconsistency == SpellingInconsistency.ORTHOGRAPHIC_VARIATION.value:
                 return True
         return False
 
@@ -293,7 +298,7 @@ class SynonymNormalizer:
         """
         if flg_input.missspelling == Missspelling.ENABLE:
             spelling_inconsistency = self.get_synonym_value_from_morpheme(morpheme, SynonymField.SPELLING_INCONSISTENCY)
-            if spelling_inconsistency == 3:
+            if spelling_inconsistency == SpellingInconsistency.MISSPELLING.value:
                 return True
         return False
 
@@ -311,7 +316,7 @@ class SynonymNormalizer:
             return True
         if flg_input.expansion == Expansion.FROM_ANOTHER:
             flg_expansion = self.get_synonym_value_from_morpheme(morpheme, SynonymField.FLG_EXPANSION)
-            if flg_expansion == 0:
+            if flg_expansion == FlgExpantion.ANY.value:
                 return True
         return False
 
