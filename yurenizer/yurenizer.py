@@ -4,7 +4,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Set, Union
 
 import ipdb
-from entities import (
+from yurenizer.entities import (
     AlphabeticAbbreviation,
     Alphabet,
     Expansion,
@@ -142,6 +142,8 @@ class SynonymNormalizer:
         orthographic_variation: OrthographicVariation = OrthographicVariation.ENABLE,
         missspelling: Missspelling = Missspelling.ENABLE,
     ):
+        if not text:
+            raise ValueError("テキストが空です")
         flg_input = FlgInput(
             yougen=yougen,
             taigen=taigen,
