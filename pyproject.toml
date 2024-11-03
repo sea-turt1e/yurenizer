@@ -11,6 +11,7 @@ python = "^3.11"
 sudachipy = ">=0.6.8"
 sudachidict-full = "*"
 ipdb = "^0.13.13"
+pytest = "^8.3.3"
 
 [build-system]
 requires = ["poetry-core"]

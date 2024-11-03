@@ -187,7 +187,7 @@ class SynonymNormalizer:
         if self.__flg_normalize_by_pos(morpheme, flg_input):
             if self.__flg_normalize_other_language(morpheme, flg_input):
                 flg_normalize = True
-            elif self.__flg_normalize_by_alphabetic_abbreviation2alphabet(morpheme, flg_input):
+            elif self.__flg_normalize_by_alphabetic_abbreviation(morpheme, flg_input):
                 flg_normalize = True
             elif self.__flg_normalize_by_non_alphabetic_abbreviation(morpheme, flg_input):
                 flg_normalize = True
@@ -198,6 +198,8 @@ class SynonymNormalizer:
             elif self.__flg_normalize_by_missspelling(morpheme, flg_input):
                 flg_normalize = True
             elif self.__flg_normalize_by_expansion(morpheme, flg_input):
+                flg_normalize = True
+            elif flg_input.yougen == Yougen.INCLUDE:
                 flg_normalize = True
 
         if flg_normalize:
@@ -242,9 +244,9 @@ class SynonymNormalizer:
             return True
         return False
 
-    def __flg_normalize_by_alphabetic_abbreviation2alphabet(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
+    def __flg_normalize_by_alphabetic_abbreviation(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
         """
-        アルファベットの略語をアルファベット表記するかを判断する
+        アルファベットの略語を名寄せするかを判断する
 
         Args:
             morpheme: 形態素情報

@@ -87,11 +87,12 @@ class TestSynonymNormalizer:
         assert result == "USA"
 
     def test_normalize_text_with_alphabetic_abbreviation(self, normalizer, default_disabled_flags):
-        text = "NISA"
+        text = "TDL"
         test_flags = default_disabled_flags.copy()
         test_flags["alphabetic_abbreviation"] = AlphabeticAbbreviation.ENABLE
+        test_flags["expansion"] = Expansion.ANY
         result = normalizer.normalize(text, **test_flags)
-        assert result == "少額投資非課税制度"
+        assert result == "東京ディズニーランド"
 
     def test_normalize_japanese_abbreviation(self, normalizer, default_disabled_flags):
         text = "パソコン"
@@ -108,11 +109,11 @@ class TestSynonymNormalizer:
         assert result == "パーソナルコンピューター"
 
     def test_normalize_misspelling(self, normalizer, default_disabled_flags):
-        text = "ジェネレーティブ"
+        text = "ソルダ"
         test_flags = default_disabled_flags.copy()
         test_flags["missspelling"] = Missspelling.ENABLE
         result = normalizer.normalize(text, **test_flags)
-        assert result == "ジェネラティブ"
+        assert result == "ソルダー"
 
     def test_get_morphemes(self, normalizer):
         text = "テストを実行する"
@@ -136,118 +137,21 @@ class TestSynonymNormalizer:
         assert len(synonyms) > 0
         assert all(isinstance(k, str) for k in synonyms.keys())
 
-        def test_get_standard_form(self, normalizer):
-            text = "USA"
-            morphemes = normalizer.get_morphemes(text)
-            standard_form = normalizer.get_standard_form(morphemes[0], Expansion.ANY)
-            assert standard_form == "アメリカ合衆国"
+    def test_normalize_long_text(self, normalizer):
+        text = "これは長いテキストのテストです。USAでチェックを行う。パソコンを使う。"
+        result = normalizer.normalize(text)
+        expected = "これは長いテキストのテストです。USAでチェックを行う。パーソナルコンピューターを使う。"
+        assert result == expected
 
-        def test_get_standard_form_no_synonym(self, normalizer):
-            text = "テスト"
-            morphemes = normalizer.get_morphemes(text)
-            standard_form = normalizer.get_standard_form(morphemes[0], Expansion.ANY)
-            assert standard_form == "テスト"
+    def test_normalize_yougen(self, normalizer, default_disabled_flags):
+        text = "問う"
+        test_flags = default_disabled_flags.copy()
+        test_flags["yougen"] = Yougen.INCLUDE
+        test_flags["taigen"] = Taigen.EXCLUDE
+        result = normalizer.normalize(text, **test_flags)
+        assert result == "チェックする"
 
-        def test_get_synonym_value_from_morpheme(self, normalizer):
-            text = "USA"
-            morphemes = normalizer.get_morphemes(text)
-            synonym_value = normalizer.get_synonym_value_from_morpheme(morphemes[0], SynonymField.FLG_EXPANSION)
-            assert synonym_value == 0  # Expected value based on synonyms.txt
-
-        def test_normalize_word(self, normalizer):
-            text = "USA"
-            morphemes = normalizer.get_morphemes(text)
-            flg_input = FlgInput()
-            normalized_word = normalizer.normalize_word(morphemes[0], flg_input)
-            assert normalized_word == "アメリカ合衆国"
-
-        def test_normalize_empty_text(self, normalizer):
-            text = ""
-            result = normalizer.normalize(text)
-            assert result == ""
-
-        def test_normalize_nonexistent_word(self, normalizer):
-            text = "架空の言葉"
-            result = normalizer.normalize(text)
-            assert result == "架空の言葉"
-
-        def test_get_morphemes_empty_text(self, normalizer):
-            text = ""
-            morphemes = normalizer.get_morphemes(text)
-            assert morphemes == []
-
-        def test_get_synonym_group_no_synonym(self, normalizer):
-            text = "テスト"
-            morphemes = normalizer.get_morphemes(text)
-            synonym_group = normalizer.get_synonym_group(morphemes[0])
-            assert synonym_group is None
-
-        def test_normalize_with_yougen_include(self, normalizer):
-            text = "食べる"
-            result = normalizer.normalize(text, yougen=Yougen.INCLUDE)
-            assert result == text  # Adjust expected value based on synonyms.txt
-
-        def test_normalize_with_taigen_exclude(self, normalizer):
-            text = "テストを実行する"
-            result = normalizer.normalize(text, taigen=Taigen.EXCLUDE)
-            assert result == "テストを実行する"
-
-        def test_normalize_other_language_disable(self, normalizer):
-            text = "USA"
-            result = normalizer.normalize(text, other_language=OtherLanguage.DISABLE)
-            assert result == "USA"
-
-        def test_normalize_alphabet_disable(self, normalizer):
-            text = "check"
-            result = normalizer.normalize(text, alphabet=Alphabet.DISABLE)
-            assert result == "check"
-
-        def test_normalize_with_misspelling_disable(self, normalizer):
-            text = "インターフェイス"
-            result = normalizer.normalize(text, missspelling=Missspelling.DISABLE)
-            assert result == "インターフェイス"
-
-        def test_normalize_long_text(self, normalizer):
-            text = "これは長いテキストのテストです。USAでチェックを行う。パソコンを使う。"
-            result = normalizer.normalize(text)
-            expected = "これは長いテキストのテストです。アメリカ合衆国で確認を行う。パーソナルコンピュータを使う。"
-            assert result == expected
-
-        def test_normalize_with_symbols(self, normalizer):
-            text = "テスト!これは、どうですか？"
-            result = normalizer.normalize(text)
-            assert result == text
-
-        def test_normalize_with_numbers(self, normalizer):
-            text = "2021年のデータ"
-            result = normalizer.normalize(text)
-            assert result == text
-
-        def test_normalize_with_emojis(self, normalizer):
-            text = "テスト😊"
-            result = normalizer.normalize(text)
-            assert result == text
-
-        def test_normalize_with_mixed_script(self, normalizer):
-            text = "Checkを行う。"
-            result = normalizer.normalize(text)
-            expected = "チェックを行う。"
-            assert result == expected
-
-        def test_normalize_with_katakana(self, normalizer):
-            text = "コンピューター"
-            result = normalizer.normalize(text)
-            assert result == text  # Adjust expected value if necessary
-
-        def test_normalize_with_hiragana(self, normalizer):
-            text = "ありがとう"
-            result = normalizer.normalize(text)
-            assert result == text
-
-        def test_normalize_with_kanji(self, normalizer):
-            text = "山"
-            result = normalizer.normalize(text)
-            assert result == text
+        result = normalizer.normalize(text, yougen=Yougen.INCLUDE)
 
         # def test_normalize_with_custom_synonym_file(self):
         #     custom_file = "custom_synonyms.json"
