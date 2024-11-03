@@ -15,6 +15,7 @@ from yurenizer.entities import (
     Taigen,
     Yougen,
     OtherLanguage,
+    TaigenOrYougen,
     FlgExpantion,
     Abbreviation,
     SpellingInconsistency,
@@ -109,9 +110,30 @@ class SynonymNormalizer:
     #     except Exception as e:
     #         print(f"カスタム同義語ファイル読み込みエラー: {e}")
 
-    def get_standard_form(self, morpheme: Morpheme, expansion: Expansion) -> str:
+    def get_standard_yougen(self, morpheme: Morpheme, expansion: Expansion) -> str:
         """
-        単語の代表表記を取得
+        用言の代表表記を取得
+
+        Args:
+            morpheme: 形態素情報
+            expansion: 同義語展開の制御フラグ
+        Returns:
+            標準形（同義語が見つからない場合は元の単語）
+        """
+        # グループ辞書から同義語グループを探す
+        synonym_group = self.get_synonym_group(morpheme)
+        if synonym_group:
+            yougen_group = [s for s in synonym_group if s.taigen_or_yougen == TaigenOrYougen.YOUGEN.value]
+            if expansion == Expansion.ANY:
+                return yougen_group[0].lemma
+            elif expansion == Expansion.FROM_ANOTHER:
+                if {y.lemma: y.flg_expansion for y in yougen_group}.get(morpheme.normalized_form()) == 0:
+                    return yougen_group[0].lemma
+        return morpheme.surface()
+
+    def get_standard_taigen(self, morpheme: Morpheme, expansion: Expansion) -> str:
+        """
+        体言の代表表記を取得
 
         Args:
             morpheme: 形態素情報
@@ -183,8 +205,13 @@ class SynonymNormalizer:
         Returns:
             正規化された文字列
         """
+        # 用言の場合
+        if self.yougen_matcher(morpheme) and flg_input.yougen == Yougen.INCLUDE:
+            return self.get_standard_yougen(morpheme, flg_input.expansion)
+
+        # 体言の場合
         flg_normalize = False  # 代表表記するかどうか
-        if self.__flg_normalize_by_pos(morpheme, flg_input):
+        if self.taigen_matcher(morpheme) and flg_input.taigen == Taigen.INCLUDE:
             if self.__flg_normalize_other_language(morpheme, flg_input):
                 flg_normalize = True
             elif self.__flg_normalize_by_alphabetic_abbreviation(morpheme, flg_input):
@@ -199,8 +226,6 @@ class SynonymNormalizer:
                 flg_normalize = True
             elif self.__flg_normalize_by_expansion(morpheme, flg_input):
                 flg_normalize = True
-            elif flg_input.yougen == Yougen.INCLUDE:
-                flg_normalize = True
 
         if flg_normalize:
             if flg_input.expansion in (Expansion.ANY, Expansion.FROM_ANOTHER):
@@ -209,26 +234,9 @@ class SynonymNormalizer:
                 if len(synonym_group_ids) > 1:
                     return morpheme.surface()
                 # 同義語展開
-                return self.get_standard_form(morpheme, flg_input.expansion)
+                return self.get_standard_taigen(morpheme, flg_input.expansion)
 
         return morpheme.surface()
-
-    def __flg_normalize_by_pos(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
-        """
-        品詞情報によって、正規化するかどうかを判断する
-
-        Args:
-            morpheme: 形態素情報
-            flg_input: 正規化のオプション
-        Returns:
-            正規化する場合はTrue, しない場合はFalse
-        """
-        flg = False
-        if flg_input.taigen == Taigen.INCLUDE and self.taigen_matcher(morpheme):
-            return True
-        if flg_input.yougen == Yougen.INCLUDE and self.yougen_matcher(morpheme):
-            return True
-        return flg
 
     def __flg_normalize_other_language(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
         """
@@ -406,7 +414,7 @@ class SynonymNormalizer:
     #     for token in tokens:
     #         surface = token.surface()
     #         normalized = token.normalized_form()
-    #         standard = self.get_standard_form(normalized)
+    #         standard = self.get_standard_taigen(normalized)
     #         synonyms = self.get_synonyms(normalized)
 
     #         if surface != standard or synonyms:

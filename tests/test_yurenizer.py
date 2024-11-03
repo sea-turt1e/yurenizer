@@ -149,7 +149,7 @@ class TestSynonymNormalizer:
         test_flags["yougen"] = Yougen.INCLUDE
         test_flags["taigen"] = Taigen.EXCLUDE
         result = normalizer.normalize(text, **test_flags)
-        assert result == "チェックする"
+        assert result == "尋ねる"
 
         result = normalizer.normalize(text, yougen=Yougen.INCLUDE)
 
