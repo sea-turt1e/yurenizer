@@ -3,7 +3,6 @@ import json
 from collections import defaultdict
 from typing import Dict, List, Optional, Set, Union
 
-import ipdb
 from yurenizer.entities import (
     AlphabeticAbbreviation,
     Alphabet,
