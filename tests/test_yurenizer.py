@@ -153,18 +153,14 @@ class TestSynonymNormalizer:
 
         result = normalizer.normalize(text, yougen=Yougen.INCLUDE)
 
-        # def test_normalize_with_custom_synonym_file(self):
-        #     custom_file = "custom_synonyms.json"
-        #     custom_synonyms = {"こんにちは": ["おはよう", "こんばんは"]}
-        #     with open(custom_file, "w", encoding="utf-8") as f:
-        #         json.dump(custom_synonyms, f, ensure_ascii=False)
-        #     normalizer = SynonymNormalizer(custom_synonym_file=custom_file)
-        #     text = "おはよう"
-        #     result = normalizer.normalize(text)
-        #     assert result == "こんにちは"
-        #     os.remove(custom_file)
+    def test_normalize_with_custom_synonym_file(self):
+        custom_file = "yurenizer/data/custom_synonyms.json"
+        custom_normalizer = SynonymNormalizer(custom_synonyms_file=custom_file)
+        text = "幽☆遊☆白書を読む"
+        result = custom_normalizer.normalize(text)
+        assert result == "幽遊白書を読む"
 
-        def test_load_sudachi_synonyms_file_not_found(self):
-            normalizer = SynonymNormalizer()
-            with pytest.raises(FileNotFoundError):
-                normalizer.load_sudachi_synonyms("non_existent_file.txt")
+    def test_load_sudachi_synonyms_file_not_found(self):
+        normalizer = SynonymNormalizer()
+        with pytest.raises(FileNotFoundError):
+            normalizer.load_sudachi_synonyms("non_existent_file.txt")

@@ -27,7 +27,7 @@ from sudachipy import Morpheme, dictionary, tokenizer
 
 
 class SynonymNormalizer:
-    def __init__(self, custom_synonym_file: Optional[str] = None) -> None:
+    def __init__(self, custom_synonyms_file: Optional[str] = None) -> None:
         """
         SudachiDictの同義語辞書を使用した表記ゆれ統一ツールの初期化
 
@@ -43,21 +43,23 @@ class SynonymNormalizer:
         self.taigen_matcher = sudachi_dic.pos_matcher(lambda x: x[0] == "名詞")
         self.yougen_matcher = sudachi_dic.pos_matcher(lambda x: x[0] in ["動詞", "形容詞"])
 
-        # 同義語辞書の初期化
-        self.synonym_dict: Dict[str, Set[str]] = {}
-        self.group_dict: Dict[str, str] = {}  # 単語から同義語グループIDへのマッピング
-
         # SudachiDictの同義語ファイルを読み込み
         synonyms = self.load_sudachi_synonyms()
         self.synonyms = {int(k): v for k, v in synonyms.items()}
 
-        # # カスタム同義語の読み込み
-        # if custom_synonym_file:
-        #     self.load_custom_synonyms(custom_synonym_file)
+        # カスタム同義語の読み込み
+        self.custom_synonyms = {}
+        if custom_synonyms_file:
+            self.custom_synonyms = self.load_custom_synonyms(custom_synonyms_file)
 
     def load_sudachi_synonyms(self, synonym_file: str = "yurenizer/data/synonyms.txt"):
         """
         SudachiDictのsynonyms.txtから同義語情報を読み込む
+
+        Args:
+            synonym_file: 同義語ファイルのパス
+        Returns:
+            同義語情報の辞書
         """
         with open(synonym_file, "r", encoding="utf-8") as f:
             reader = csv.reader(f)
@@ -81,34 +83,29 @@ class SynonymNormalizer:
             )
         return synonyms
 
-    # def load_custom_synonyms(self, file_path: str):
-    #     """
-    #     カスタム同義語定義を読み込む
+    def load_custom_synonyms(self, file_path: str) -> Dict[str, Set[str]]:
+        """
+        カスタム同義語定義を読み込む
 
-    #     Args:
-    #         file_path: 同義語定義JSONファイルのパス
+        Args:
+            file_path: 同義語定義JSONファイルのパス
 
-    #     JSONフォーマット:
-    #     {
-    #         "標準形": ["同義語1", "同義語2", ...],
-    #         ...
-    #     }
-    #     """
-    #     try:
-    #         with open(file_path, "r", encoding="utf-8") as f:
-    #             custom_synonyms = json.load(f)
-    #             for standard, synonyms in custom_synonyms.items():
-    #                 if standard not in self.synonym_dict:
-    #                     self.synonym_dict[standard] = set()
-    #                 self.synonym_dict[standard].update(synonyms)
+        JSONフォーマット:
+        {
+            "標準形": ["同義語1", "同義語2", ...],
+            ...
+        }
+        Returns:
+            カスタム同義語定義の辞書 (標準形: (同義語1, 同義語2, ...))
+        """
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                custom_synonyms = json.load(f)
+                custom_synonyms = {k: set(v) for k, v in custom_synonyms.items() if v}
+                return custom_synonyms
 
-    #                 # グループ辞書にも追加
-    #                 group_id = f"custom_{standard}"
-    #                 for word in [standard] + synonyms:
-    #                     self.group_dict[word] = group_id
-
-    #     except Exception as e:
-    #         print(f"カスタム同義語ファイル読み込みエラー: {e}")
+        except Exception as e:
+            raise ValueError(f"カスタム同義語定義の読み込みに失敗しました: {e}")
 
     def get_standard_yougen(self, morpheme: Morpheme, expansion: Expansion) -> str:
         """
@@ -120,6 +117,11 @@ class SynonymNormalizer:
         Returns:
             標準形（同義語が見つからない場合は元の単語）
         """
+        # カスタム同義語定義を使用
+        custom_representation = self.normalize_word_by_custom_synonyms(morpheme.surface())
+        if custom_representation:
+            return custom_representation
+
         # グループ辞書から同義語グループを探す
         synonym_group = self.get_synonym_group(morpheme)
         if synonym_group:
@@ -141,6 +143,10 @@ class SynonymNormalizer:
         Returns:
             標準形（同義語が見つからない場合は元の単語）
         """
+        # カスタム同義語定義を使用
+        custom_representation = self.normalize_word_by_custom_synonyms(morpheme.surface())
+        if custom_representation:
+            return custom_representation
         # グループ辞書から同義語グループを探す
         synonym_group = self.get_synonym_group(morpheme)
         if synonym_group:
@@ -164,6 +170,28 @@ class SynonymNormalizer:
         orthographic_variation: OrthographicVariation = OrthographicVariation.ENABLE,
         missspelling: Missspelling = Missspelling.ENABLE,
     ):
+        """
+        テキストの表記ゆれと同義語を統一する
+
+        Args:
+            text: 正規化する文字列
+            taigen: 統一するのに体言を含むかどうかのフラグ。デフォルトは含む（default=1）。含まない場合は0を指定。
+            yougen: 統一するのに用言を含むかどうかのフラグ。デフォルトは含まない（default=0）。含む場合は1を指定。
+            expansion: 同義語展開の制御フラグ。デフォルトは展開制御フラグが0のもののみ展開（default="from_another"）。"ANY"を指定すると展開制御フラグが常に展開する。
+            other_language: 日本語以外の言語を日本語に名寄せするかどうかのフラグ。デフォルトは名寄せする（default=1）。名寄せしない場合は0を指定。
+            alphabet: アルファベットの表記揺れを名寄せするかどうかのフラグ。デフォルトは名寄せする（default=1）。名寄せしない場合は0を指定。
+            alphabetic_abbreviation: アルファベットの略語を名寄せするかどうかのフラグ。デフォルトは名寄せする（default=1）。名寄せしない場合は0を指定。
+            non_alphabetic_abbreviation: 日本語の略語を名寄せするかどうかのフラグ。デフォルトは名寄せする（default=1）。名寄せしない場合は0を指定。
+            orthographic_variation: 異表記を名寄せするかどうかのフラグ。デフォルトは名寄せする（default=1）。名寄せしない場合は0を指定。
+            missspelling: 誤表記を名寄せするかどうかのフラグ。デフォルトは名寄せする（default=1）。名寄せしない場合は0を指定。
+        Returns:
+            正規化された文字列
+
+        See Also:
+            SudachiDictの同義語辞書ソース:
+            https://github.com/WorksApplications/SudachiDict/blob/develop/docs/synonyms.md#%E5%90%8C%E7%BE%A9%E8%AA%9E%E8%BE%9E%E6%9B%B8%E3%82%BD%E3%83%BC%E3%82%B9-%E3%83%95%E3%82%A9%E3%83%BC%E3%83%9E%E3%83%83%E3%83%88
+        """
+
         if not text:
             raise ValueError("テキストが空です")
         flg_input = FlgInput(
@@ -237,6 +265,20 @@ class SynonymNormalizer:
                 return self.get_standard_taigen(morpheme, flg_input.expansion)
 
         return morpheme.surface()
+
+    def normalize_word_by_custom_synonyms(self, word: str) -> Optional[str]:
+        """
+        カスタム同義語定義を使用して単語を正規化する。なければそのまま返す
+
+        Args:
+            word: 正規化する単語
+        Returns:
+            正規化された単語
+        """
+        for k, v in self.custom_synonyms.items():
+            if word in v:
+                return k
+        return None
 
     def __flg_normalize_other_language(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
         """
