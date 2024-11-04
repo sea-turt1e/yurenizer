@@ -24,39 +24,39 @@ class Expansion(Enum):
 
 
 class OtherLanguage(Enum):
-    # 多言語を日本語へ名寄せするかどうかのフラグ
-    DISABLE = 0  # 多言語を日本語へ名寄せしない
-    ENABLE = 1  # 多言語を日本語へ名寄せする
+    # 多言語を日本語へ正規化するかどうかのフラグ
+    DISABLE = 0  # 多言語を日本語へ正規化しない
+    ENABLE = 1  # 多言語を日本語へ正規化する
 
 
 class AlphabeticAbbreviation(Enum):
-    # アルファベットの略語を名寄せするかどうかのフラグ
-    DISABLE = 0  # アルファベットの略語名寄せを行わない
-    ENABLE = 1  # アルファベットの略語名寄せを行う
+    # アルファベットの略語を正規化するかどうかのフラグ
+    DISABLE = 0  # アルファベットの略語正規化を行わない
+    ENABLE = 1  # アルファベットの略語正規化を行う
 
 
 class NonAlphabeticAbbreviation(Enum):
-    # 日本語の略語を名寄せするかどうかのフラグ
-    DISABLE = 0  # 日本語の略語名寄せを行わない
-    ENABLE = 1  # 日本語の略語名寄せを行う
+    # 日本語の略語を正規化するかどうかのフラグ
+    DISABLE = 0  # 日本語の略語正規化を行わない
+    ENABLE = 1  # 日本語の略語正規化を行う
 
 
 class Alphabet(Enum):
-    # アルファベットの表記揺れを名寄せするかどうかのフラグ
-    DISABLE = 0  # アルファベットの表記揺れを名寄せしない
-    ENABLE = 1  # アルファベットの表記揺れを名寄せする
+    # アルファベットの表記揺れを正規化するかどうかのフラグ
+    DISABLE = 0  # アルファベットの表記揺れを正規化しない
+    ENABLE = 1  # アルファベットの表記揺れを正規化する
 
 
 class OrthographicVariation(Enum):
-    # 異表記を名寄せするかどうかのフラグ
-    DISABLE = 0  # 異表記を名寄せしない
-    ENABLE = 1  # 異表記を名寄せする
+    # 異表記を正規化するかどうかのフラグ
+    DISABLE = 0  # 異表記を正規化しない
+    ENABLE = 1  # 異表記を正規化する
 
 
 class Missspelling(Enum):
-    # 誤表記を名寄せするかどうかのフラグ
-    DISABLE = 0  # 誤字を名寄せしない
-    ENABLE = 1  # 誤字を名寄せする
+    # 誤表記を正規化するかどうかのフラグ
+    DISABLE = 0  # 誤字を正規化しない
+    ENABLE = 1  # 誤字を正規化する
 
 
 @dataclass

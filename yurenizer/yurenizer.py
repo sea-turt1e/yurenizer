@@ -22,12 +22,15 @@ from yurenizer.entities import (
     SynonymField,
     Synonym,
     SynonymField,
+    SudachiDictType,
 )
 from sudachipy import Morpheme, dictionary, tokenizer
 
 
 class SynonymNormalizer:
-    def __init__(self, custom_synonyms_file: Optional[str] = None) -> None:
+    def __init__(
+        self, sudachi_dict: SudachiDictType = SudachiDictType.FULL.value, custom_synonyms_file: Optional[str] = None
+    ) -> None:
         """
         SudachiDictの同義語辞書を使用した表記ゆれ統一ツールの初期化
 
@@ -35,7 +38,7 @@ class SynonymNormalizer:
             custom_synonym_file: 追加の同義語定義ファイル（任意）
         """
         # Sudachi初期化
-        sudachi_dic = dictionary.Dictionary(dict="full")  # TODO: sudachiの辞書を指定できるようにする
+        sudachi_dic = dictionary.Dictionary(dict=sudachi_dict)
         self.tokenizer_obj = sudachi_dic.create()
         self.mode = tokenizer.Tokenizer.SplitMode.C
 
@@ -178,12 +181,12 @@ class SynonymNormalizer:
             taigen: 統一するのに体言を含むかどうかのフラグ。デフォルトは含む（default=1）。含まない場合は0を指定。
             yougen: 統一するのに用言を含むかどうかのフラグ。デフォルトは含まない（default=0）。含む場合は1を指定。
             expansion: 同義語展開の制御フラグ。デフォルトは展開制御フラグが0のもののみ展開（default="from_another"）。"ANY"を指定すると展開制御フラグが常に展開する。
-            other_language: 日本語以外の言語を日本語に名寄せするかどうかのフラグ。デフォルトは名寄せする（default=1）。名寄せしない場合は0を指定。
-            alphabet: アルファベットの表記揺れを名寄せするかどうかのフラグ。デフォルトは名寄せする（default=1）。名寄せしない場合は0を指定。
-            alphabetic_abbreviation: アルファベットの略語を名寄せするかどうかのフラグ。デフォルトは名寄せする（default=1）。名寄せしない場合は0を指定。
-            non_alphabetic_abbreviation: 日本語の略語を名寄せするかどうかのフラグ。デフォルトは名寄せする（default=1）。名寄せしない場合は0を指定。
-            orthographic_variation: 異表記を名寄せするかどうかのフラグ。デフォルトは名寄せする（default=1）。名寄せしない場合は0を指定。
-            missspelling: 誤表記を名寄せするかどうかのフラグ。デフォルトは名寄せする（default=1）。名寄せしない場合は0を指定。
+            other_language: 日本語以外の言語を日本語に正規化するかどうかのフラグ。デフォルトは正規化する（default=1）。正規化しない場合は0を指定。
+            alphabet: アルファベットの表記揺れを正規化するかどうかのフラグ。デフォルトは正規化する（default=1）。正規化しない場合は0を指定。
+            alphabetic_abbreviation: アルファベットの略語を正規化するかどうかのフラグ。デフォルトは正規化する（default=1）。正規化しない場合は0を指定。
+            non_alphabetic_abbreviation: 日本語の略語を正規化するかどうかのフラグ。デフォルトは正規化する（default=1）。正規化しない場合は0を指定。
+            orthographic_variation: 異表記を正規化するかどうかのフラグ。デフォルトは正規化する（default=1）。正規化しない場合は0を指定。
+            missspelling: 誤表記を正規化するかどうかのフラグ。デフォルトは正規化する（default=1）。正規化しない場合は0を指定。
         Returns:
             正規化された文字列
 
@@ -296,7 +299,7 @@ class SynonymNormalizer:
 
     def __flg_normalize_by_alphabetic_abbreviation(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
         """
-        アルファベットの略語を名寄せするかを判断する
+        アルファベットの略語を正規化するかを判断する
 
         Args:
             morpheme: 形態素情報
@@ -312,7 +315,7 @@ class SynonymNormalizer:
 
     def __flg_normalize_by_non_alphabetic_abbreviation(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
         """
-        日本語の略語を名寄せするかどうかを判断する
+        日本語の略語を正規化するかどうかを判断する
 
         Args:
             morpheme: 形態素情報
@@ -347,7 +350,7 @@ class SynonymNormalizer:
 
     def __flg_normalize_by_orthographic_variation(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
         """
-        異表記を名寄せするかどうかを判断する
+        異表記を正規化するかどうかを判断する
 
         Args:
             morpheme: 形態素情報
@@ -363,7 +366,7 @@ class SynonymNormalizer:
 
     def __flg_normalize_by_missspelling(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
         """
-        誤表記を名寄せするかどうかを判断する
+        誤表記を正規化するかどうかを判断する
 
         Args:
             morpheme: 形態素情報
