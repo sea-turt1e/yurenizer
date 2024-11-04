@@ -162,6 +162,7 @@ cython_debug/
 #.idea/
 
 # add by author
-yurenizer/data/*
+yurenizer/data/synonyms.txt
+yurenizer/data/custom_synonyms.json
 tmp/*
 .vscode/*

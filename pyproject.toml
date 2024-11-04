@@ -3,8 +3,10 @@ name = "yurenizer"
 version = "0.0.1"
 description = "A library for standardizing terms with spelling variations using a synonym dictionary."
 authors = ["sea-turt1e <h.yamada.bg@gmail.com>"]
+repository = "https://github.com/sea-turt1e/yurenizer"
 license = "Apache-2.0"
 readme = "README.md"
+keywords = ["nlp", "text-processing", "japanese", "synonym", "normalization"]
 
 [tool.poetry.dependencies]
 python = "^3.11"
