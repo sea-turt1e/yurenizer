@@ -17,17 +17,17 @@ pip install yurenizer
 
 ## 同義語辞書のダウンロード
 ```bash
-curl -L -o ./data/synonyms.txt https://raw.githubusercontent.com/WorksApplications/SudachiDict/refs/heads/develop/src/main/text/synonyms.txt
+curl -L -o synonyms.txt https://raw.githubusercontent.com/WorksApplications/SudachiDict/refs/heads/develop/src/main/text/synonyms.txt
 ```
 
 ## 使用方法
 ### すぐ使いたい場合
 ```python
 from yurenizer import SynonymNormalizer, NormalizerConfig
-normalizer = SynonymNormalizer()
-text = "パソコンはパーソナルコンピュータの同義語で、パーソナル・コンピュータと言ったりパーソナル・コンピューターと言ったりします。"
+normalizer = SynonymNormalizer(synonym_file_path="path/to/synonym_file_path")
+text = "「パソコン」は「パーソナルコンピュータ」の「synonym」で、「パーソナル・コンピュータ」と表記することもあります。"
 print(normalizer.normalize(text))
-# 出力: パーソナルコンピューターはパーソナルコンピューターのシノニムで、パーソナルコンピューターと言ったりパーソナルコンピューターと言ったりします。
+# 出力: 「パーソナルコンピューター」は「パーソナルコンピューター」の「シノニム」で、「パーソナルコンピューター」と表記することもあります。
 ```
 
 ### 設定を変更する場合
@@ -36,9 +36,9 @@ normalize関数の引数に`NormalizerConfig`を指定することで、正規�
 #### 設定を変更する場合の使用例
 ```python
 from yurenizer import SynonymNormalizer, NormalizerConfig
-normalizer = SynonymNormalizer()
+normalizer = SynonymNormalizer(synonym_file_path="path/to/synonym_file_path")
 text = "パソコンはパーソナルコンピュータの同義語です"
-config = NormalizerConfig(taigen=False, yougen=False, expansion="any", other_language=False, alphabet=False, alphabetic_abbreviation=False, non_alphabetic_abbreviation=False, orthographic_variation=False, missspelling=False)
+config = NormalizerConfig(taigen=True, yougen=False, expansion="from_another", other_language=False, alphabet=False, alphabetic_abbreviation=False, non_alphabetic_abbreviation=False, orthographic_variation=False, missspelling=False)
 print(normalizer.normalize(text, config))
 # 出力: パソコンはパーソナルコンピュータの同義語で、パーソナル・コンピュータと言ったりパーソナル・コンピューターと言ったりします。
 ```

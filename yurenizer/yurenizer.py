@@ -29,7 +29,10 @@ from sudachipy import Morpheme, dictionary, tokenizer
 
 class SynonymNormalizer:
     def __init__(
-        self, sudachi_dict: SudachiDictType = SudachiDictType.FULL.value, custom_synonyms_file: Optional[str] = None
+        self,
+        synonym_file_path: str,
+        sudachi_dict: SudachiDictType = SudachiDictType.FULL.value,
+        custom_synonyms_file: Optional[str] = None,
     ) -> None:
         """
         SudachiDictの同義語辞書を使用した表記ゆれ統一ツールの初期化
@@ -47,7 +50,7 @@ class SynonymNormalizer:
         self.yougen_matcher = sudachi_dic.pos_matcher(lambda x: x[0] in ["動詞", "形容詞"])
 
         # SudachiDictの同義語ファイルを読み込み
-        synonyms = self.load_sudachi_synonyms()
+        synonyms = self.load_sudachi_synonyms(synonym_file_path)
         self.synonyms = {int(k): v for k, v in synonyms.items()}
 
         # カスタム同義語の読み込み
@@ -55,7 +58,7 @@ class SynonymNormalizer:
         if custom_synonyms_file:
             self.custom_synonyms = self.load_custom_synonyms(custom_synonyms_file)
 
-    def load_sudachi_synonyms(self, synonym_file: str = "yurenizer/data/synonyms.txt"):
+    def load_sudachi_synonyms(self, synonym_file: str) -> Dict[int, List[Synonym]]:
         """
         SudachiDictのsynonyms.txtから同義語情報を読み込む
 
@@ -220,6 +223,8 @@ class SynonymNormalizer:
 
         # 体言の場合
         flg_normalize = False  # 代表表記するかどうか
+        flg_expansion = False  # 同義語展開するかどうか
+        # TODO: disableの時がうまくいかな
         if self.taigen_matcher(morpheme) and flg_input.taigen == Taigen.INCLUDE:
             if self.__flg_normalize_other_language(morpheme, flg_input):
                 flg_normalize = True
@@ -234,9 +239,9 @@ class SynonymNormalizer:
             elif self.__flg_normalize_by_missspelling(morpheme, flg_input):
                 flg_normalize = True
             elif self.__flg_normalize_by_expansion(morpheme, flg_input):
-                flg_normalize = True
+                flg_expansion = True
 
-        if flg_normalize:
+        if flg_normalize and flg_expansion:
             if flg_input.expansion in (Expansion.ANY, Expansion.FROM_ANOTHER):
                 # 同義語グループのIDsを取得
                 synonym_group_ids = morpheme.synonym_group_ids()

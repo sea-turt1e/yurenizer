@@ -24,7 +24,7 @@ from yurenizer.entities import (
 class TestSynonymNormalizer:
     @pytest.fixture
     def normalizer(self):
-        return SynonymNormalizer()
+        return SynonymNormalizer(synonym_file_path="yurenizer/data/synonyms.txt")
 
     def test_initialization(self, normalizer):
         assert normalizer is not None
@@ -77,6 +77,13 @@ class TestSynonymNormalizer:
         default_disabled_flags.expansion = expansion
         result = normalizer.normalize(text, default_disabled_flags)
         assert result == expected
+
+    def test_normalize_with_alphabet_disable(self, normalizer, default_disabled_flags):
+        text = "synonym"
+        test_flags = deepcopy(default_disabled_flags)
+        test_flags.alphabet = Alphabet.DISABLE.value
+        result = normalizer.normalize(text, test_flags)
+        assert result == "synonym"
 
     def test_normalize_text_with_alphabetic_abbreviation(self, normalizer, default_disabled_flags):
         text = "TDL"
@@ -144,12 +151,13 @@ class TestSynonymNormalizer:
 
     def test_normalize_with_custom_synonym_file(self):
         custom_file = "yurenizer/data/custom_synonyms.json"
-        custom_normalizer = SynonymNormalizer(custom_synonyms_file=custom_file)
+        custom_normalizer = SynonymNormalizer(
+            synonym_file_path="./yurenizer/data/synonyms.txt", custom_synonyms_file=custom_file
+        )
         text = "幽☆遊☆白書を読む。ハンターハンターも読む。"
         result = custom_normalizer.normalize(text)
         assert result == "幽遊白書を読む。hunterhunterも読む。"
 
-    def test_load_sudachi_synonyms_file_not_found(self):
-        normalizer = SynonymNormalizer()
+    def test_load_sudachi_synonyms_file_not_found(self, nor):
         with pytest.raises(FileNotFoundError):
             normalizer.load_sudachi_synonyms("non_existent_file.txt")
