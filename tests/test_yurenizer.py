@@ -145,9 +145,9 @@ class TestSynonymNormalizer:
     def test_normalize_with_custom_synonym_file(self):
         custom_file = "yurenizer/data/custom_synonyms.json"
         custom_normalizer = SynonymNormalizer(custom_synonyms_file=custom_file)
-        text = "幽☆遊☆白書を読む"
+        text = "幽☆遊☆白書を読む。ハンターハンターも読む。"
         result = custom_normalizer.normalize(text)
-        assert result == "幽遊白書を読む"
+        assert result == "幽遊白書を読む。hunterhunterも読む。"
 
     def test_load_sudachi_synonyms_file_not_found(self):
         normalizer = SynonymNormalizer()
