@@ -9,11 +9,19 @@ class Taigen(Enum):
     EXCLUDE = 0
     INCLUDE = 1
 
+    @classmethod
+    def from_int(cls, value: int):
+        return cls(value)
+
 
 class Yougen(Enum):
     # 用言を含むかどうかのフラグ
     EXCLUDE = 0
     INCLUDE = 1
+
+    @classmethod
+    def from_int(cls, value: int):
+        return cls(value)
 
 
 class Expansion(Enum):
@@ -22,11 +30,19 @@ class Expansion(Enum):
     FROM_ANOTHER = "from_another"  # 自分自身が展開のトリガーとはならないが、同グループ内の別の見出しからは展開される
     NOT_ALL = "not_all"  # 常に展開に使用しない ※削除履歴として利用 (弊害語などが誤って再登録されるのを防ぐため)
 
+    @classmethod
+    def from_str(cls, value: str):
+        return cls(value)
+
 
 class OtherLanguage(Enum):
     # 多言語を日本語へ正規化するかどうかのフラグ
     DISABLE = 0  # 多言語を日本語へ正規化しない
     ENABLE = 1  # 多言語を日本語へ正規化する
+
+    @classmethod
+    def from_int(cls, value: int):
+        return cls(value)
 
 
 class AlphabeticAbbreviation(Enum):
@@ -34,11 +50,19 @@ class AlphabeticAbbreviation(Enum):
     DISABLE = 0  # アルファベットの略語正規化を行わない
     ENABLE = 1  # アルファベットの略語正規化を行う
 
+    @classmethod
+    def from_int(cls, value: int):
+        return cls(value)
+
 
 class NonAlphabeticAbbreviation(Enum):
     # 日本語の略語を正規化するかどうかのフラグ
     DISABLE = 0  # 日本語の略語正規化を行わない
     ENABLE = 1  # 日本語の略語正規化を行う
+
+    @classmethod
+    def from_int(cls, value: int):
+        return cls(value)
 
 
 class Alphabet(Enum):
@@ -46,17 +70,29 @@ class Alphabet(Enum):
     DISABLE = 0  # アルファベットの表記揺れを正規化しない
     ENABLE = 1  # アルファベットの表記揺れを正規化する
 
+    @classmethod
+    def from_int(cls, value: int):
+        return cls(value)
+
 
 class OrthographicVariation(Enum):
     # 異表記を正規化するかどうかのフラグ
     DISABLE = 0  # 異表記を正規化しない
     ENABLE = 1  # 異表記を正規化する
 
+    @classmethod
+    def from_int(cls, value: int):
+        return cls(value)
+
 
 class Missspelling(Enum):
     # 誤表記を正規化するかどうかのフラグ
     DISABLE = 0  # 誤字を正規化しない
     ENABLE = 1  # 誤字を正規化する
+
+    @classmethod
+    def from_int(cls, value: int):
+        return cls(value)
 
 
 @dataclass
