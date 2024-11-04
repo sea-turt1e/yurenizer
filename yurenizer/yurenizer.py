@@ -23,6 +23,7 @@ from yurenizer.entities import (
     Synonym,
     SynonymField,
     SudachiDictType,
+    NormalizerConfig,
 )
 from sudachipy import Morpheme, dictionary, tokenizer
 
@@ -163,52 +164,30 @@ class SynonymNormalizer:
     def normalize(
         self,
         text: str,
-        taigen: Taigen = Taigen.INCLUDE,
-        yougen: Yougen = Taigen.EXCLUDE,
-        expansion: Expansion = Expansion.FROM_ANOTHER,
-        other_language: OtherLanguage = OtherLanguage.ENABLE,
-        alphabet: Alphabet = Alphabet.ENABLE,
-        alphabetic_abbreviation: AlphabeticAbbreviation = AlphabeticAbbreviation.ENABLE,
-        non_alphabetic_abbreviation: NonAlphabeticAbbreviation = NonAlphabeticAbbreviation.ENABLE,
-        orthographic_variation: OrthographicVariation = OrthographicVariation.ENABLE,
-        missspelling: Missspelling = Missspelling.ENABLE,
-    ):
+        config: NormalizerConfig = NormalizerConfig(),
+    ) -> str:
         """
         テキストの表記ゆれと同義語を統一する
 
         Args:
-            text: 正規化する文字列
-            taigen: 統一するのに体言を含むかどうかのフラグ。デフォルトは含む（default=1）。含まない場合は0を指定。
-            yougen: 統一するのに用言を含むかどうかのフラグ。デフォルトは含まない（default=0）。含む場合は1を指定。
-            expansion: 同義語展開の制御フラグ。デフォルトは展開制御フラグが0のもののみ展開（default="from_another"）。"ANY"を指定すると展開制御フラグが常に展開する。
-            other_language: 日本語以外の言語を日本語に正規化するかどうかのフラグ。デフォルトは正規化する（default=1）。正規化しない場合は0を指定。
-            alphabet: アルファベットの表記揺れを正規化するかどうかのフラグ。デフォルトは正規化する（default=1）。正規化しない場合は0を指定。
-            alphabetic_abbreviation: アルファベットの略語を正規化するかどうかのフラグ。デフォルトは正規化する（default=1）。正規化しない場合は0を指定。
-            non_alphabetic_abbreviation: 日本語の略語を正規化するかどうかのフラグ。デフォルトは正規化する（default=1）。正規化しない場合は0を指定。
-            orthographic_variation: 異表記を正規化するかどうかのフラグ。デフォルトは正規化する（default=1）。正規化しない場合は0を指定。
-            missspelling: 誤表記を正規化するかどうかのフラグ。デフォルトは正規化する（default=1）。正規化しない場合は0を指定。
+            config: 正規化のオプション
+
         Returns:
             正規化された文字列
-
-        See Also:
-            SudachiDictの同義語辞書ソース:
-            https://github.com/WorksApplications/SudachiDict/blob/develop/docs/synonyms.md#%E5%90%8C%E7%BE%A9%E8%AA%9E%E8%BE%9E%E6%9B%B8%E3%82%BD%E3%83%BC%E3%82%B9-%E3%83%95%E3%82%A9%E3%83%BC%E3%83%9E%E3%83%83%E3%83%88
         """
-
         if not text:
             raise ValueError("テキストが空です")
         flg_input = FlgInput(
-            yougen=yougen,
-            taigen=taigen,
-            expansion=expansion,
-            other_language=other_language,
-            alphabet=alphabet,
-            alphabetic_abbreviation=alphabetic_abbreviation,
-            non_alphabetic_abbreviation=non_alphabetic_abbreviation,
-            orthographic_variation=orthographic_variation,
-            missspelling=missspelling,
+            yougen=Yougen.from_int(config.yougen),
+            taigen=Taigen.from_int(config.taigen),
+            expansion=Expansion.from_str(config.expansion),
+            other_language=OtherLanguage.from_int(config.other_language),
+            alphabet=Alphabet.from_int(config.alphabet),
+            alphabetic_abbreviation=AlphabeticAbbreviation.from_int(config.alphabetic_abbreviation),
+            non_alphabetic_abbreviation=NonAlphabeticAbbreviation.from_int(config.non_alphabetic_abbreviation),
+            orthographic_variation=OrthographicVariation.from_int(config.orthographic_variation),
+            missspelling=Missspelling.from_int(config.missspelling),
         )
-
         return self.__normalize_text(text=text, flg_input=flg_input)
 
     def __normalize_text(self, text: str, flg_input: FlgInput) -> str:
@@ -425,90 +404,3 @@ class SynonymNormalizer:
                 (getattr(item, synonym_attr.value) for item in synonym_group if item.lemma == morpheme.surface()), None
             )
         return None
-
-    # def get_synonyms(self, word: str) -> Set[str]:
-    #     """
-    #     単語の同義語セットを取得
-
-    #     Args:
-    #         word: 対象の単語
-    #     Returns:
-    #         同義語のセット
-    #     """
-    #     # グループ辞書から同義語グループを探す
-    #     group_id = self.group_dict.get(word)
-    #     if group_id:
-    #         # 同じグループに属する全ての単語を返す
-    #         for standard, synonyms in self.synonym_dict.items():
-    #             if word in synonyms:
-    #                 return synonyms
-    #     return set()
-
-    # def analyze_variants(self, text: str) -> List[Dict[str, any]]:
-    #     """
-    #     テキスト中の表記ゆれと同義語を分析
-
-    #     Args:
-    #         text: 分析する文字列
-    #     Returns:
-    #         異形情報のリスト
-    #     """
-    #     tokens = self.tokenizer_obj.tokenize(text, self.mode)
-    #     variants = []
-
-    #     for token in tokens:
-    #         surface = token.surface()
-    #         normalized = token.normalized_form()
-    #         standard = self.get_standard_taigen(normalized)
-    #         synonyms = self.get_synonyms(normalized)
-
-    #         if surface != standard or synonyms:
-    #             variant_info = {
-    #                 "surface": surface,
-    #                 "normalized": normalized,
-    #                 "standard": standard,
-    #                 "synonyms": list(synonyms),
-    #                 "part_of_speech": token.part_of_speech(),
-    #                 "group_id": self.group_dict.get(normalized),
-    #             }
-    #             variants.append(variant_info)
-
-    #     return variants
-
-
-# 使用例
-if __name__ == "__main__":
-    flg_input = FlgInput(
-        taigen=Taigen.INCLUDE,
-        yougen=Yougen.EXCLUDE,
-        expansion=Expansion.FROM_ANOTHER,
-        other_language=OtherLanguage.ENABLE,
-        alphabet=Alphabet.ENABLE,
-        alphabetic_abbreviation=AlphabeticAbbreviation.ENABLE,
-        non_alphabetic_abbreviation=NonAlphabeticAbbreviation.ENABLE,
-        orthographic_variation=OrthographicVariation.ENABLE,
-        missspelling=Missspelling.ENABLE,
-    )
-    # 正規化ツールの初期化
-    normalizer = SynonymNormalizer()
-
-    # テスト用テキスト
-    texts = [
-        "USA",
-        "America",
-        "alphabet曖昧なバス停で待機する。スマホを確認する。",
-        "チェックリストを行う。",
-        "チェックを行う",
-        "checkを行う。",
-    ]
-    print("FROM_ANOTHERの場合")
-    for text in texts:
-        print(f"テキスト:　 {text}")
-        normalized_text = normalizer.normalize(text, alphabet=Alphabet.DISABLE, expansion=Expansion.FROM_ANOTHER)
-        print(f"正規化結果: {normalized_text}")
-
-    print("ANYの場合")
-    for text in texts:
-        print(f"テキスト:　 {text}")
-        normalized_text = normalizer.normalize(text, expansion=Expansion.ANY)
-        print(f"正規化結果: {normalized_text}")

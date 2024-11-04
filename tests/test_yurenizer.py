@@ -3,6 +3,7 @@ from pathlib import Path
 from yurenizer.yurenizer import SynonymNormalizer
 import os
 import json
+from copy import deepcopy
 
 from yurenizer.entities import (
     Taigen,
@@ -16,6 +17,7 @@ from yurenizer.entities import (
     Missspelling,
     SynonymField,
     FlgInput,
+    NormalizerConfig,
 )
 
 
@@ -37,18 +39,18 @@ class TestSynonymNormalizer:
 
     @pytest.fixture
     def default_disabled_flags(self):
-        """taigen、expansion以外、全てのフラグをDISABLEにした基本設定を返すフィクスチャ"""
-        return {
-            "taigen": Taigen.INCLUDE,
-            "yougen": Yougen.EXCLUDE,
-            "expansion": Expansion.FROM_ANOTHER,
-            "other_language": OtherLanguage.DISABLE,
-            "alphabet": Alphabet.DISABLE,
-            "alphabetic_abbreviation": AlphabeticAbbreviation.DISABLE,
-            "non_alphabetic_abbreviation": NonAlphabeticAbbreviation.DISABLE,
-            "orthographic_variation": OrthographicVariation.DISABLE,
-            "missspelling": Missspelling.DISABLE,
-        }
+        """taigen以外、全てのフラグをDISABLEにした基本設定を返すフィクスチャ"""
+        return NormalizerConfig(
+            taigen=True,
+            yougen=False,
+            expansion="from_another",
+            other_language=False,
+            alphabet=False,
+            alphabetic_abbreviation=False,
+            non_alphabetic_abbreviation=False,
+            orthographic_variation=False,
+            missspelling=False,
+        )
 
     @pytest.mark.parametrize(
         "text,expected",
@@ -65,54 +67,44 @@ class TestSynonymNormalizer:
     @pytest.mark.parametrize(
         "text,expansion,expected",
         [
-            ("USA", Expansion.ANY, "アメリカ合衆国"),
-            ("USA", Expansion.FROM_ANOTHER, "USA"),
-            ("チェック", Expansion.ANY, "確認"),
-            ("チェック", Expansion.FROM_ANOTHER, "チェック"),
+            ("USA", Expansion.ANY.value, "アメリカ合衆国"),
+            ("USA", Expansion.FROM_ANOTHER.value, "USA"),
+            ("チェック", Expansion.ANY.value, "確認"),
+            ("チェック", Expansion.FROM_ANOTHER.value, "チェック"),
         ],
     )
-    def test_normalize_with_different_expansions(self, normalizer, text, expansion, expected):
-        result = normalizer.normalize(text, expansion=expansion)
+    def test_normalize_with_different_expansions(self, normalizer, default_disabled_flags, text, expansion, expected):
+        default_disabled_flags.expansion = expansion
+        result = normalizer.normalize(text, default_disabled_flags)
         assert result == expected
-
-    def test_normalize_with_custom_options(self, normalizer):
-        text = "USA"
-        result = normalizer.normalize(
-            text,
-            taigen=Taigen.INCLUDE,
-            yougen=Yougen.EXCLUDE,
-            expansion=Expansion.FROM_ANOTHER,
-            alphabet=Alphabet.DISABLE,
-        )
-        assert result == "USA"
 
     def test_normalize_text_with_alphabetic_abbreviation(self, normalizer, default_disabled_flags):
         text = "TDL"
-        test_flags = default_disabled_flags.copy()
-        test_flags["alphabetic_abbreviation"] = AlphabeticAbbreviation.ENABLE
-        test_flags["expansion"] = Expansion.ANY
-        result = normalizer.normalize(text, **test_flags)
+        test_flags = deepcopy(default_disabled_flags)
+        test_flags.alphabetic_abbreviation = True
+        test_flags.expansion = Expansion.ANY.value
+        result = normalizer.normalize(text, test_flags)
         assert result == "東京ディズニーランド"
 
     def test_normalize_japanese_abbreviation(self, normalizer, default_disabled_flags):
         text = "パソコン"
-        test_flags = default_disabled_flags.copy()
-        test_flags["non_alphabetic_abbreviation"] = NonAlphabeticAbbreviation.ENABLE
-        result = normalizer.normalize(text, **test_flags)
+        test_flags = deepcopy(default_disabled_flags)
+        test_flags.non_alphabetic_abbreviation = NonAlphabeticAbbreviation.ENABLE.value
+        result = normalizer.normalize(text, test_flags)
         assert result == "パーソナルコンピューター"
 
     def test_normalize_orthographic_variation(self, normalizer, default_disabled_flags):
         text = "パーソナル・コンピューター"
-        test_flags = default_disabled_flags.copy()
-        test_flags["orthographic_variation"] = OrthographicVariation.ENABLE
-        result = normalizer.normalize(text, **test_flags)
+        test_flags = deepcopy(default_disabled_flags)
+        test_flags.orthographic_variation = OrthographicVariation.ENABLE.value
+        result = normalizer.normalize(text, test_flags)
         assert result == "パーソナルコンピューター"
 
     def test_normalize_misspelling(self, normalizer, default_disabled_flags):
         text = "ソルダ"
-        test_flags = default_disabled_flags.copy()
-        test_flags["missspelling"] = Missspelling.ENABLE
-        result = normalizer.normalize(text, **test_flags)
+        test_flags = deepcopy(default_disabled_flags)
+        test_flags.missspelling = Missspelling.ENABLE.value
+        result = normalizer.normalize(text, test_flags)
         assert result == "ソルダー"
 
     def test_get_morphemes(self, normalizer):
@@ -144,14 +136,11 @@ class TestSynonymNormalizer:
         assert result == expected
 
     def test_normalize_yougen(self, normalizer, default_disabled_flags):
-        text = "問う"
-        test_flags = default_disabled_flags.copy()
-        test_flags["yougen"] = Yougen.INCLUDE
-        test_flags["taigen"] = Taigen.EXCLUDE
-        result = normalizer.normalize(text, **test_flags)
-        assert result == "尋ねる"
-
-        result = normalizer.normalize(text, yougen=Yougen.INCLUDE)
+        text = "嫉む"
+        test_flags = deepcopy(default_disabled_flags)
+        test_flags.yougen = True
+        result = normalizer.normalize(text, test_flags)
+        assert result == "妬む"
 
     def test_normalize_with_custom_synonym_file(self):
         custom_file = "yurenizer/data/custom_synonyms.json"
