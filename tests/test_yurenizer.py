@@ -78,7 +78,7 @@ class TestSynonymNormalizer:
         [
             ("USA", Expansion.ANY.value, "アメリカ合衆国"),
             ("USA", Expansion.FROM_ANOTHER.value, "USA"),
-            ("チェック", Expansion.ANY.value, "チェック"),
+            ("チェック", Expansion.ANY.value, "確認"),
             ("チェック", Expansion.FROM_ANOTHER.value, "チェック"),
         ],
     )

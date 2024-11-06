@@ -10,6 +10,7 @@ from yurenizer.entities import (
     FlgInput,
     NonAlphabeticAbbreviation,
     Missspelling,
+    CusotomSynonym,
     OrthographicVariation,
     Taigen,
     Yougen,
@@ -182,15 +183,19 @@ class SynonymNormalizer:
         if not text:
             raise ValueError("テキストが空です")
         flg_input = FlgInput(
-            yougen=Yougen.from_int(config.yougen),
             taigen=Taigen.from_int(config.taigen),
+            yougen=Yougen.from_int(config.yougen),
             expansion=Expansion.from_str(config.expansion),
             other_language=OtherLanguage.from_int(config.other_language),
-            alphabet=Alphabet.from_int(config.alphabet),
+            alias=Alias.from_int(config.alias),
+            old_name=OldName.from_int(config.old_name),
+            misuse=Misuse.from_int(config.misuse),
             alphabetic_abbreviation=AlphabeticAbbreviation.from_int(config.alphabetic_abbreviation),
             non_alphabetic_abbreviation=NonAlphabeticAbbreviation.from_int(config.non_alphabetic_abbreviation),
+            alphabet=Alphabet.from_int(config.alphabet),
             orthographic_variation=OrthographicVariation.from_int(config.orthographic_variation),
             missspelling=Missspelling.from_int(config.missspelling),
+            custom_synonym=CusotomSynonym.from_int(config.custom_synonym),
         )
         return self.__normalize_text(text=text, flg_input=flg_input)
 
