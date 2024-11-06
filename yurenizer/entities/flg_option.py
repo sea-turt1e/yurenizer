@@ -36,7 +36,7 @@ class Expansion(Enum):
 
 
 class OtherLanguage(Enum):
-    # 多言語を日本語へ正規化するかどうかのフラグ
+    # 他言語を日本語へ正規化するかどうかのフラグ
     DISABLE = 0  # 多言語を日本語へ正規化しない
     ENABLE = 1  # 多言語を日本語へ正規化する
 
@@ -95,6 +95,16 @@ class Missspelling(Enum):
         return cls(value)
 
 
+class CusotomSynonym(Enum):
+    # カスタムシノニムを使用するかどうかのフラグ
+    DISABLE = 0  # カスタムシノニムを使用しない
+    ENABLE = 1  # カスタムシノニムを使用する
+
+    @classmethod
+    def from_int(cls, value: int):
+        return cls(value)
+
+
 @dataclass
 class FlgInput:
     yougen: Yougen = Yougen.EXCLUDE
@@ -106,9 +116,4 @@ class FlgInput:
     non_alphabetic_abbreviation: NonAlphabeticAbbreviation = NonAlphabeticAbbreviation.ENABLE
     orthographic_variation: OrthographicVariation = OrthographicVariation.ENABLE
     missspelling: Missspelling = Missspelling.ENABLE
-
-
-@dataclass
-class FlgNormalize:
-    abbreviation: bool = True
-    notation: bool = True
+    custom_synonym: CusotomSynonym = CusotomSynonym.ENABLE

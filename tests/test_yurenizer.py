@@ -38,6 +38,11 @@ class TestSynonymNormalizer:
         assert result != ""
 
     @pytest.fixture
+    def default_flags(self):
+        """flgはデフォルトの値を持つフィクスチャ"""
+        return NormalizerConfig()
+
+    @pytest.fixture
     def default_disabled_flags(self):
         """taigen以外、全てのフラグをDISABLEにした基本設定を返すフィクスチャ"""
         return NormalizerConfig(
@@ -45,11 +50,15 @@ class TestSynonymNormalizer:
             yougen=False,
             expansion="from_another",
             other_language=False,
+            alias=False,
+            old_name=False,
+            misuse=False,
             alphabet=False,
             alphabetic_abbreviation=False,
             non_alphabetic_abbreviation=False,
             orthographic_variation=False,
             missspelling=False,
+            custom_synonym=False,
         )
 
     @pytest.mark.parametrize(
@@ -67,20 +76,29 @@ class TestSynonymNormalizer:
     @pytest.mark.parametrize(
         "text,expansion,expected",
         [
-            ("USA", Expansion.ANY.value, "アメリカ合衆国"),
+            ("USA", Expansion.ANY.value, "USA"),
             ("USA", Expansion.FROM_ANOTHER.value, "USA"),
-            ("チェック", Expansion.ANY.value, "確認"),
+            ("チェック", Expansion.ANY.value, "チェック"),
             ("チェック", Expansion.FROM_ANOTHER.value, "チェック"),
         ],
     )
     def test_normalize_with_different_expansions(self, normalizer, default_disabled_flags, text, expansion, expected):
-        default_disabled_flags.expansion = expansion
-        result = normalizer.normalize(text, default_disabled_flags)
+        # expansionフラグはTrueだが、それ以外は全てFalseなので、同義語展開は行われない
+        test_flags = deepcopy(default_disabled_flags)
+        test_flags.expansion = expansion
+        result = normalizer.normalize(text, test_flags)
         assert result == expected
 
-    def test_normalize_with_alphabet_disable(self, normalizer, default_disabled_flags):
-        text = "synonym"
+    def test_normalize_with_other_language_able(self, normalizer, default_disabled_flags):
+        text = "America"
         test_flags = deepcopy(default_disabled_flags)
+        test_flags.other_language = OtherLanguage.ENABLE.value
+        result = normalizer.normalize(text, test_flags)
+        assert result == "アメリカ合衆国"
+
+    def test_normalize_with_alphabet_disable(self, normalizer, default_flags):
+        text = "synonym"
+        test_flags = deepcopy(default_flags)
         test_flags.alphabet = Alphabet.DISABLE.value
         result = normalizer.normalize(text, test_flags)
         assert result == "synonym"
@@ -108,11 +126,11 @@ class TestSynonymNormalizer:
         assert result == "パーソナルコンピューター"
 
     def test_normalize_misspelling(self, normalizer, default_disabled_flags):
-        text = "ソルダ"
+        text = "テトラポット"
         test_flags = deepcopy(default_disabled_flags)
         test_flags.missspelling = Missspelling.ENABLE.value
         result = normalizer.normalize(text, test_flags)
-        assert result == "ソルダー"
+        assert result == "テトラポッド"
 
     def test_get_morphemes(self, normalizer):
         text = "テストを実行する"
@@ -132,7 +150,8 @@ class TestSynonymNormalizer:
             normalizer.normalize("")
 
     def test_load_sudachi_synonyms(self, normalizer):
-        synonyms = normalizer.load_sudachi_synonyms()
+        synonym_file_path = "yurenizer/data/synonyms.txt"
+        synonyms = normalizer.load_sudachi_synonyms(synonym_file_path)
         assert len(synonyms) > 0
         assert all(isinstance(k, str) for k in synonyms.keys())
 
@@ -149,15 +168,17 @@ class TestSynonymNormalizer:
         result = normalizer.normalize(text, test_flags)
         assert result == "妬む"
 
-    def test_normalize_with_custom_synonym_file(self):
+    def test_normalize_with_custom_synonym_file(self, default_disabled_flags):
         custom_file = "yurenizer/data/custom_synonyms.json"
         custom_normalizer = SynonymNormalizer(
             synonym_file_path="./yurenizer/data/synonyms.txt", custom_synonyms_file=custom_file
         )
         text = "幽☆遊☆白書を読む。ハンターハンターも読む。"
-        result = custom_normalizer.normalize(text)
+        test_flags = deepcopy(default_disabled_flags)
+        test_flags.custom_synonym = True
+        result = custom_normalizer.normalize(text, test_flags)
         assert result == "幽遊白書を読む。hunterhunterも読む。"
 
-    def test_load_sudachi_synonyms_file_not_found(self, nor):
+    def test_load_sudachi_synonyms_file_not_found(self, normalizer):
         with pytest.raises(FileNotFoundError):
             normalizer.load_sudachi_synonyms("non_existent_file.txt")

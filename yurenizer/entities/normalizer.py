@@ -7,11 +7,15 @@ class NormalizerConfig:
     yougen: bool = False
     expansion: str = "from_another"
     other_language: bool = True
+    alias: bool = True
+    old_name: bool = True
+    misuse: bool = True
     alphabet: bool = True
     alphabetic_abbreviation: bool = True
     non_alphabetic_abbreviation: bool = True
     orthographic_variation: bool = True
     missspelling: bool = True
+    custom_synonym: bool = True
 
     """
     NormalizerConfigクラスは正規化の設定を保持するクラスです。
@@ -29,6 +33,7 @@ class NormalizerConfig:
         non_alphabetic_abbreviation（default=True）: 日本語の略語を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
         orthographic_variation（default=True）: 異表記を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
         missspelling（default=True）: 誤表記を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
+        custom_synonym（default=True）: ユーザーが設定したcustom_synonymを使用するかどうかのフラグ。デフォルトは使用する。使用しない場合はFalseを指定。
 
     例:
         ```

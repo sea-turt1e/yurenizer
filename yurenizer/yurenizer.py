@@ -16,6 +16,7 @@ from yurenizer.entities import (
     OtherLanguage,
     TaigenOrYougen,
     FlgExpantion,
+    WordForm,
     Abbreviation,
     SpellingInconsistency,
     SynonymField,
@@ -123,11 +124,6 @@ class SynonymNormalizer:
         Returns:
             標準形（同義語が見つからない場合は元の単語）
         """
-        # カスタム同義語定義を使用
-        custom_representation = self.normalize_word_by_custom_synonyms(morpheme.surface())
-        if custom_representation:
-            return custom_representation
-
         # グループ辞書から同義語グループを探す
         synonym_group = self.get_synonym_group(morpheme)
         if synonym_group:
@@ -149,10 +145,6 @@ class SynonymNormalizer:
         Returns:
             標準形（同義語が見つからない場合は元の単語）
         """
-        # カスタム同義語定義を使用
-        custom_representation = self.normalize_word_by_custom_synonyms(morpheme.surface())
-        if custom_representation:
-            return custom_representation
         # グループ辞書から同義語グループを探す
         synonym_group = self.get_synonym_group(morpheme)
         if synonym_group:
@@ -162,6 +154,13 @@ class SynonymNormalizer:
                 if {s.lemma: s.flg_expansion for s in synonym_group}.get(morpheme.normalized_form()) == 0:
                     return synonym_group[0].lemma
         return morpheme.surface()
+
+    def get_custom_synonym(self, morpheme: Morpheme) -> Optional[str]:
+        # カスタム同義語定義を使用
+        custom_representation = self.normalize_word_by_custom_synonyms(morpheme.surface())
+        if custom_representation:
+            return custom_representation
+        return None
 
     def normalize(
         self,
@@ -217,16 +216,23 @@ class SynonymNormalizer:
         Returns:
             正規化された文字列
         """
+        # カスタム同義語定義を使用
+        custom_representation = self.get_custom_synonym(morpheme)
+        if custom_representation:
+            return custom_representation
+        # 展開制御フラグによって、同義語展開するかどうかを判定
+        if not self.__flg_normalize_by_expansion(morpheme, flg_input):
+            return morpheme.surface()
+
+        # 同義語展開するもの
         # 用言の場合
         if self.yougen_matcher(morpheme) and flg_input.yougen == Yougen.INCLUDE:
             return self.get_standard_yougen(morpheme, flg_input.expansion)
 
         # 体言の場合
         flg_normalize = False  # 代表表記するかどうか
-        flg_expansion = False  # 同義語展開するかどうか
-        # TODO: disableの時がうまくいかな
         if self.taigen_matcher(morpheme) and flg_input.taigen == Taigen.INCLUDE:
-            if self.__flg_normalize_other_language(morpheme, flg_input):
+            if self.__flg_normalize_by_other_language(morpheme, flg_input):
                 flg_normalize = True
             elif self.__flg_normalize_by_alphabetic_abbreviation(morpheme, flg_input):
                 flg_normalize = True
@@ -238,17 +244,15 @@ class SynonymNormalizer:
                 flg_normalize = True
             elif self.__flg_normalize_by_missspelling(morpheme, flg_input):
                 flg_normalize = True
-            elif self.__flg_normalize_by_expansion(morpheme, flg_input):
-                flg_expansion = True
 
-        if flg_normalize and flg_expansion:
-            if flg_input.expansion in (Expansion.ANY, Expansion.FROM_ANOTHER):
-                # 同義語グループのIDsを取得
-                synonym_group_ids = morpheme.synonym_group_ids()
-                if len(synonym_group_ids) > 1:
-                    return morpheme.surface()
-                # 同義語展開
-                return self.get_standard_taigen(morpheme, flg_input.expansion)
+        if flg_normalize:
+            # if flg_input.expansion in (Expansion.ANY, Expansion.FROM_ANOTHER):
+            # 同義語グループのIDsを取得
+            synonym_group_ids = morpheme.synonym_group_ids()
+            if len(synonym_group_ids) > 1:
+                return morpheme.surface()
+            # 同義語展開
+            return self.get_standard_taigen(morpheme, flg_input.expansion)
 
         return morpheme.surface()
 
@@ -266,9 +270,10 @@ class SynonymNormalizer:
                 return k
         return None
 
-    def __flg_normalize_other_language(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
+    def __flg_normalize_by_other_language(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
         """
-        多言語を日本語にするかどうかを判断する
+        他言語を日本語にするかどうかを判断する
+        （同一語彙素内での語形種別が1 : (代表語から見て) 対訳のもの）
 
         Args:
             morpheme: 形態素情報
@@ -276,8 +281,69 @@ class SynonymNormalizer:
         Returns:
             正規化する場合はTrue, しない場合はFalse
         """
-        if flg_input.other_language == OtherLanguage.ENABLE and not morpheme.surface().isascii():
-            return True
+        if flg_input.other_language == OtherLanguage.ENABLE:
+            synonym_group = self.get_synonym_group(morpheme)
+            if synonym_group:
+                word_form = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.WORD_FORM)
+                if word_form == WordForm.TRANSLATION.value:
+                    return True
+        return False
+
+    def __flg_normalize_by_alias(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
+        """
+        別称を正規化するかどうかを判断する
+        （同一語彙素内での語形種別が2 : (代表語から見て) 別称のもの (通称・愛称等)）
+
+        Args:
+            morpheme: 形態素情報
+            flg_input: 正規化のオプション
+        Returns:
+            正規化する場合はTrue, しない場合はFalse
+        """
+        if flg_input.word_form == WordForm.ALIAS:
+            synonym_group = self.get_synonym_group(morpheme)
+            if synonym_group:
+                word_form = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.WORD_FORM)
+                if word_form == WordForm.ALIAS.value:
+                    return True
+        return False
+
+    def __flg_normalize_by_old_name(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
+        """
+        旧称を正規化するかどうかを判断する
+        （同一語彙素内での語形種別が3 : (代表語から見て) 旧称のもの）
+
+        Args:
+            morpheme: 形態素情報
+            flg_input: 正規化のオプション
+        Returns:
+            正規化する場合はTrue, しない場合はFalse
+        """
+        if flg_input.word_form == WordForm.OLD_NAME:
+            synonym_group = self.get_synonym_group(morpheme)
+            if synonym_group:
+                word_form = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.WORD_FORM)
+                if word_form == WordForm.OLD_NAME.value:
+                    return True
+        return False
+
+    def __flg_normalize_by_misuse(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
+        """
+        誤用を正規化するかどうかを判断する
+        （同一語彙素内での語形種別が4 : (代表語から見て) 誤用のもの）
+
+        Args:
+            morpheme: 形態素情報
+            flg_input: 正規化のオプション
+        Returns:
+            正規化する場合はTrue, しない場合はFalse
+        """
+        if flg_input.word_form == WordForm.MISUSE:
+            synonym_group = self.get_synonym_group(morpheme)
+            if synonym_group:
+                word_form = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.WORD_FORM)
+                if word_form == WordForm.MISUSE.value:
+                    return True
         return False
 
     def __flg_normalize_by_alphabetic_abbreviation(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
@@ -291,7 +357,8 @@ class SynonymNormalizer:
             正規化する場合はTrue, しない場合はFalse
         """
         if flg_input.alphabetic_abbreviation == AlphabeticAbbreviation.ENABLE and morpheme.surface().isascii():
-            abbreviation_id = self.get_synonym_value_from_morpheme(morpheme, SynonymField.ABBREVIATION)
+            synonym_group = self.get_synonym_group(morpheme)
+            abbreviation_id = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.ABBREVIATION)
             if abbreviation_id == Abbreviation.ALPHABET.value:
                 return True
         return False
@@ -310,7 +377,8 @@ class SynonymNormalizer:
             flg_input.non_alphabetic_abbreviation == NonAlphabeticAbbreviation.ENABLE
             and not morpheme.surface().isascii()
         ):
-            abbreviation_id = self.get_synonym_value_from_morpheme(morpheme, SynonymField.ABBREVIATION)
+            synonym_group = self.get_synonym_group(morpheme)
+            abbreviation_id = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.ABBREVIATION)
             if abbreviation_id == Abbreviation.NOT_ALPHABET.value:
                 return True
         return False
@@ -326,7 +394,10 @@ class SynonymNormalizer:
             正規化する場合はTrue, しない場合はFalse
         """
         if flg_input.alphabet == Alphabet.ENABLE and morpheme.surface().isascii():
-            spelling_inconsistency = self.get_synonym_value_from_morpheme(morpheme, SynonymField.SPELLING_INCONSISTENCY)
+            synonym_group = self.get_synonym_group(morpheme)
+            spelling_inconsistency = self.get_synonym_value_from_morpheme(
+                morpheme, synonym_group, SynonymField.SPELLING_INCONSISTENCY
+            )
             if spelling_inconsistency == SpellingInconsistency.ALPHABET.value:
                 return True
         return False
@@ -342,7 +413,10 @@ class SynonymNormalizer:
             正規化する場合はTrue, しない場合はFalse
         """
         if flg_input.orthographic_variation == OrthographicVariation.ENABLE:
-            spelling_inconsistency = self.get_synonym_value_from_morpheme(morpheme, SynonymField.SPELLING_INCONSISTENCY)
+            synonym_group = self.get_synonym_group(morpheme)
+            spelling_inconsistency = self.get_synonym_value_from_morpheme(
+                morpheme, synonym_group, SynonymField.SPELLING_INCONSISTENCY
+            )
             if spelling_inconsistency == SpellingInconsistency.ORTHOGRAPHIC_VARIATION.value:
                 return True
         return False
@@ -358,7 +432,10 @@ class SynonymNormalizer:
             正規化する場合はTrue, しない場合はFalse
         """
         if flg_input.missspelling == Missspelling.ENABLE:
-            spelling_inconsistency = self.get_synonym_value_from_morpheme(morpheme, SynonymField.SPELLING_INCONSISTENCY)
+            synonym_group = self.get_synonym_group(morpheme)
+            spelling_inconsistency = self.get_synonym_value_from_morpheme(
+                morpheme, synonym_group, SynonymField.SPELLING_INCONSISTENCY
+            )
             if spelling_inconsistency == SpellingInconsistency.MISSPELLING.value:
                 return True
         return False
@@ -376,7 +453,8 @@ class SynonymNormalizer:
         if flg_input.expansion == Expansion.ANY:
             return True
         if flg_input.expansion == Expansion.FROM_ANOTHER:
-            flg_expansion = self.get_synonym_value_from_morpheme(morpheme, SynonymField.FLG_EXPANSION)
+            synonym_group = self.get_synonym_group(morpheme)
+            flg_expansion = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.FLG_EXPANSION)
             if flg_expansion == FlgExpantion.ANY.value:
                 return True
         return False
@@ -393,18 +471,15 @@ class SynonymNormalizer:
         tokens = self.tokenizer_obj.tokenize(text, self.mode)
         return [token for token in tokens]
 
-    def get_synonym_group(self, morpheme: Morpheme):
+    def get_synonym_group(self, morpheme: Morpheme) -> Optional[List[Synonym]]:
         synonym_group_ids = morpheme.synonym_group_ids()
         if synonym_group_ids:
             return self.synonyms[synonym_group_ids[0]]
         return None
 
     def get_synonym_value_from_morpheme(
-        self, morpheme: Morpheme, synonym_attr: SynonymField
-    ) -> Optional[Union[str, int]]:
-        synonym_group = self.get_synonym_group(morpheme)
-        if synonym_group:
-            return next(
-                (getattr(item, synonym_attr.value) for item in synonym_group if item.lemma == morpheme.surface()), None
-            )
-        return None
+        self, morpheme: Morpheme, synonym_group: List[Synonym], synonym_attr: SynonymField
+    ) -> Union[str, int]:
+        return next(
+            (getattr(item, synonym_attr.value) for item in synonym_group if item.lemma == morpheme.surface()), None
+        )
