@@ -197,6 +197,23 @@ class SynonymNormalizer:
             missspelling=Missspelling.from_int(config.missspelling),
             custom_synonym=CusotomSynonym.from_int(config.custom_synonym),
         )
+        # 条件が階層的になっているので、下位の条件が正だった場合は上位の条件は正とする
+        if (
+            flg_input.alphabet == Alphabet.ENABLE
+            or flg_input.orthographic_variation == OrthographicVariation.ENABLE
+            or flg_input.missspelling == Missspelling.ENABLE
+        ):
+            flg_input.alphabetic_abbreviation = AlphabeticAbbreviation.ENABLE
+            flg_input.non_alphabetic_abbreviation = NonAlphabeticAbbreviation.ENABLE
+
+        if (
+            flg_input.alphabetic_abbreviation == AlphabeticAbbreviation.ENABLE
+            or flg_input.non_alphabetic_abbreviation == NonAlphabeticAbbreviation.ENABLE
+        ):
+            flg_input.other_language = OtherLanguage.ENABLE
+            flg_input.alias = Alias.ENABLE
+            flg_input.old_name = OldName.ENABLE
+            flg_input.misuse = Misuse.ENABLE
         return self.__normalize_text(text=text, flg_input=flg_input)
 
     def __normalize_text(self, text: str, flg_input: FlgInput) -> str:
@@ -250,24 +267,6 @@ class SynonymNormalizer:
                 return morpheme.surface()
         else:
             return morpheme.surface()
-
-        # 条件が階層的になっているので、下位の条件が正だった場合は上位の条件は正とする
-        if (
-            flg_input.alphabet == Alphabet.ENABLE
-            or flg_input.orthographic_variation == OrthographicVariation.ENABLE
-            or flg_input.missspelling == Missspelling.ENABLE
-        ):
-            flg_input.alphabetic_abbreviation = AlphabeticAbbreviation.ENABLE
-            flg_input.non_alphabetic_abbreviation = NonAlphabeticAbbreviation.ENABLE
-
-        if (
-            flg_input.alphabetic_abbreviation == AlphabeticAbbreviation.ENABLE
-            or flg_input.non_alphabetic_abbreviation == NonAlphabeticAbbreviation.ENABLE
-        ):
-            flg_input.other_language = OtherLanguage.ENABLE
-            flg_input.alias = Alias.ENABLE
-            flg_input.old_name = OldName.ENABLE
-            flg_input.misuse = Misuse.ENABLE
 
         # 同一語彙素の同義語グループを絞り込む
         if (
