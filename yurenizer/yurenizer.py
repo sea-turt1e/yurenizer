@@ -253,6 +253,10 @@ class SynonymNormalizer:
         else:
             return morpheme.surface()
 
+        if morpheme.surface() == "パソコン":
+            import ipdb
+
+            ipdb.set_trace()
         # 体言ごと、または用言ごとの同義語グループを取得
         synonym_group = self.get_synonym_group(morpheme, is_yougen, is_taigen)
         if not synonym_group:
