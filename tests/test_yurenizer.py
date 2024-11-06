@@ -64,8 +64,8 @@ class TestSynonymNormalizer:
     @pytest.mark.parametrize(
         "text,expected",
         [
-            ("USA", "USA"),
-            ("America", "アメリカ合衆国"),
+            ("チェスト", "チェスト"),
+            ("America", "America"),
             ("checkを行う。", "checkを行う。"),
         ],
     )
@@ -76,7 +76,7 @@ class TestSynonymNormalizer:
     @pytest.mark.parametrize(
         "text,expansion,expected",
         [
-            ("USA", Expansion.ANY.value, "USA"),
+            ("USA", Expansion.ANY.value, "アメリカ合衆国"),
             ("USA", Expansion.FROM_ANOTHER.value, "USA"),
             ("チェック", Expansion.ANY.value, "チェック"),
             ("チェック", Expansion.FROM_ANOTHER.value, "チェック"),
@@ -90,7 +90,7 @@ class TestSynonymNormalizer:
         assert result == expected
 
     def test_normalize_with_other_language_able(self, normalizer, default_disabled_flags):
-        text = "America"
+        text = "United States of America"
         test_flags = deepcopy(default_disabled_flags)
         test_flags.other_language = OtherLanguage.ENABLE.value
         result = normalizer.normalize(text, test_flags)
@@ -104,14 +104,13 @@ class TestSynonymNormalizer:
         assert result == "synonym"
 
     def test_normalize_text_with_alphabetic_abbreviation(self, normalizer, default_disabled_flags):
-        text = "TDL"
+        text = "UNICEF"
         test_flags = deepcopy(default_disabled_flags)
         test_flags.alphabetic_abbreviation = True
-        test_flags.expansion = Expansion.ANY.value
         result = normalizer.normalize(text, test_flags)
-        assert result == "東京ディズニーランド"
+        assert result == "国連児童基金"
 
-    def test_normalize_japanese_abbreviation(self, normalizer, default_disabled_flags):
+    def test_normalize_non_alphabetic_abbreviation(self, normalizer, default_disabled_flags):
         text = "パソコン"
         test_flags = deepcopy(default_disabled_flags)
         test_flags.non_alphabetic_abbreviation = NonAlphabeticAbbreviation.ENABLE.value
@@ -141,7 +140,7 @@ class TestSynonymNormalizer:
     def test_get_synonym_group(self, normalizer):
         text = "USA"
         morphemes = normalizer.get_morphemes(text)
-        synonym_group = normalizer.get_synonym_group(morphemes[0])
+        synonym_group = normalizer.get_synonym_group(morphemes[0], is_yougen=False, is_taigen=True)
         assert synonym_group is not None
         assert len(synonym_group) > 0
 
@@ -162,7 +161,7 @@ class TestSynonymNormalizer:
         assert result == expected
 
     def test_normalize_yougen(self, normalizer, default_disabled_flags):
-        text = "嫉む"
+        text = "ねたむ"
         test_flags = deepcopy(default_disabled_flags)
         test_flags.yougen = True
         result = normalizer.normalize(text, test_flags)

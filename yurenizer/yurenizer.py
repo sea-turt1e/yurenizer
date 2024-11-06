@@ -14,6 +14,9 @@ from yurenizer.entities import (
     Taigen,
     Yougen,
     OtherLanguage,
+    Alias,
+    OldName,
+    Misuse,
     TaigenOrYougen,
     FlgExpantion,
     WordForm,
@@ -220,41 +223,266 @@ class SynonymNormalizer:
         custom_representation = self.get_custom_synonym(morpheme)
         if custom_representation:
             return custom_representation
-        # 展開制御フラグによって、同義語展開するかどうかを判定
-        if not self.__flg_normalize_by_expansion(morpheme, flg_input):
+        # 用言、体言の判定
+        is_yougen = self.yougen_matcher(morpheme)
+        is_taigen = self.taigen_matcher(morpheme)
+        if (flg_input.yougen == Yougen.INCLUDE and is_yougen) or (flg_input.taigen == Taigen.INCLUDE and is_taigen):
+            pass
+        else:
             return morpheme.surface()
 
-        # 同義語展開するもの
-        # 用言の場合
-        if self.yougen_matcher(morpheme) and flg_input.yougen == Yougen.INCLUDE:
-            return self.get_standard_yougen(morpheme, flg_input.expansion)
+        # 体言ごと、または用言ごとの同義語グループを取得
+        synonym_group = self.get_synonym_group(morpheme, is_yougen, is_taigen)
+        if not synonym_group:
+            return morpheme.surface()
 
-        # 体言の場合
-        flg_normalize = False  # 代表表記するかどうか
-        if self.taigen_matcher(morpheme) and flg_input.taigen == Taigen.INCLUDE:
-            if self.__flg_normalize_by_other_language(morpheme, flg_input):
-                flg_normalize = True
-            elif self.__flg_normalize_by_alphabetic_abbreviation(morpheme, flg_input):
-                flg_normalize = True
-            elif self.__flg_normalize_by_non_alphabetic_abbreviation(morpheme, flg_input):
-                flg_normalize = True
-            elif self.__flg_normalize_by_alphabet_notation(morpheme, flg_input):
-                flg_normalize = True
-            elif self.__flg_normalize_by_orthographic_variation(morpheme, flg_input):
-                flg_normalize = True
-            elif self.__flg_normalize_by_missspelling(morpheme, flg_input):
-                flg_normalize = True
-
-        if flg_normalize:
-            # if flg_input.expansion in (Expansion.ANY, Expansion.FROM_ANOTHER):
-            # 同義語グループのIDsを取得
-            synonym_group_ids = morpheme.synonym_group_ids()
-            if len(synonym_group_ids) > 1:
+        # 展開制御フラグによってのちの処理を変える
+        if flg_input.expansion == Expansion.ANY:
+            if not self.is_input_word_expansion_any_or_from_another(morpheme, synonym_group):
                 return morpheme.surface()
-            # 同義語展開
-            return self.get_standard_taigen(morpheme, flg_input.expansion)
+        elif flg_input.expansion == Expansion.FROM_ANOTHER:
+            if not self.is_input_word_expansion_from_another(morpheme, synonym_group):
+                return morpheme.surface()
+        else:
+            return morpheme.surface()
 
+        # 条件が階層的になっているので、下位の条件が正だった場合は上位の条件は正とする
+        if (
+            flg_input.alphabet == Alphabet.ENABLE
+            or flg_input.orthographic_variation == OrthographicVariation.ENABLE
+            or flg_input.missspelling == Missspelling.ENABLE
+        ):
+            flg_input.alphabetic_abbreviation = AlphabeticAbbreviation.ENABLE
+            flg_input.non_alphabetic_abbreviation = NonAlphabeticAbbreviation.ENABLE
+
+        if (
+            flg_input.alphabetic_abbreviation == AlphabeticAbbreviation.ENABLE
+            or flg_input.non_alphabetic_abbreviation == NonAlphabeticAbbreviation.ENABLE
+        ):
+            flg_input.other_language = OtherLanguage.ENABLE
+            flg_input.alias = Alias.ENABLE
+            flg_input.old_name = OldName.ENABLE
+            flg_input.misuse = Misuse.ENABLE
+
+        # 同一語彙素の同義語グループを絞り込む
+        if (
+            flg_input.other_language == OtherLanguage.ENABLE
+            or flg_input.alias == Alias.ENABLE
+            or flg_input.old_name == OldName.ENABLE
+            or flg_input.misuse == Misuse.ENABLE
+        ):
+            synonym_group = self.get_represent_synonym_group_lexeme_id(flg_input, morpheme, synonym_group)
+        if not synonym_group:
+            return morpheme.surface()
+
+        # 同じ語形の同義語グループを取得
+        if (
+            flg_input.alphabetic_abbreviation == AlphabeticAbbreviation.ENABLE
+            or flg_input.non_alphabetic_abbreviation == NonAlphabeticAbbreviation.ENABLE
+            or flg_input.alphabet == Alphabet.ENABLE
+            or flg_input.orthographic_variation == OrthographicVariation.ENABLE
+            or flg_input.missspelling == Missspelling.ENABLE
+        ):
+            synonym_group = self.get_represent_synonym_group_by_same_word_form(flg_input, morpheme, synonym_group)
+
+        if not synonym_group:
+            return morpheme.surface()
+
+        # 同じ略語・略称の同義語グループを取得
+        if (
+            flg_input.alphabet == Alphabet.ENABLE
+            or flg_input.orthographic_variation == OrthographicVariation.ENABLE
+            or flg_input.missspelling == Missspelling.ENABLE
+        ):
+            synonym_group = self.get_represent_synonym_group_by_same_abbreviation(flg_input, morpheme, synonym_group)
+        if not synonym_group:
+            return morpheme.surface()
+
+        # 同義語グループから代表表記を取得。展開制御フラグによって絞り込む
+        represent_synonym = synonym_group[0]
+        if represent_synonym:
+            return represent_synonym.lemma
         return morpheme.surface()
+
+        # # 同義語展開するもの
+        # # 用言の場合
+        # if self.yougen_matcher(morpheme) and flg_input.yougen == Yougen.INCLUDE:
+        #     return self.get_standard_yougen(morpheme, flg_input.expansion)
+
+        # # 体言の場合
+        # flg_normalize = False  # 代表表記するかどうか
+        # if self.taigen_matcher(morpheme) and flg_input.taigen == Taigen.INCLUDE:
+        #     if self.__flg_normalize_by_other_language(morpheme, flg_input):
+        #         flg_normalize = True
+        #     elif self.__flg_normalize_by_alphabetic_abbreviation(morpheme, flg_input):
+        #         flg_normalize = True
+        #     elif self.__flg_normalize_by_non_alphabetic_abbreviation(morpheme, flg_input):
+        #         flg_normalize = True
+        #     elif self.__flg_normalize_by_alphabet_notation(morpheme, flg_input):
+        #         flg_normalize = True
+        #     elif self.__flg_normalize_by_orthographic_variation(morpheme, flg_input):
+        #         flg_normalize = True
+        #     elif self.__flg_normalize_by_missspelling(morpheme, flg_input):
+        #         flg_normalize = True
+
+        # if flg_normalize:
+        #     # if flg_input.expansion in (Expansion.ANY, Expansion.FROM_ANOTHER):
+        #     # 同義語グループのIDsを取得
+        #     synonym_group_ids = morpheme.synonym_group_ids()
+        #     if len(synonym_group_ids) > 1:
+        #         return morpheme.surface()
+        #     # 同義語展開
+        #     return self.get_standard_taigen(morpheme, flg_input.expansion)
+
+        # return morpheme.surface()
+
+    def is_input_word_expansion_any_or_from_another(self, morpheme: Morpheme, synonym_group: List[Synonym]) -> bool:
+        """
+        入力単語が同義語展開されるかどうかを判断する
+
+        Args:
+            morpheme: 形態素情報
+            synonym_group: 同義語グループ
+        Returns:
+            同義語展開される場合はTrue, されない場合はFalse
+        """
+        flg_expansion = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.FLG_EXPANSION)
+        if flg_expansion in (FlgExpantion.ANY.value, FlgExpantion.FROM_ANOTHER.value):
+            return True
+        return False
+
+    def is_input_word_expansion_from_another(self, morpheme: Morpheme, synonym_group: List[Synonym]) -> bool:
+        """
+        入力単語が同義語展開されるかどうかを判断する
+
+        Args:
+            morpheme: 形態素情報
+            synonym_group: 同義語グループ
+        Returns:
+            同義語展開される場合はTrue, されない場合はFalse
+        """
+        flg_expansion = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.FLG_EXPANSION)
+        if flg_expansion == FlgExpantion.ANY.value:
+            return True
+        return False
+
+    def get_represent_synonym_group_lexeme_id(
+        self, flg_input: FlgInput, morpheme: Morpheme, synonym_group: List[Synonym]
+    ) -> List[Synonym]:
+        """
+        同一語彙素の同義語グループを絞り込む
+
+        Args:
+            morpheme: 形態素情報
+            synonym_group: 同義語グループ
+        Returns:
+            Synonymオブジェクトのリスト
+        """
+        is_expansion = False
+        filtered_synonym_group = []
+        lexeme_id = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.LEXEME_ID)
+        word_form = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.WORD_FORM)
+        if word_form == WordForm.REPRESENTATIVE.value:
+            is_expansion = True
+        elif flg_input.other_language == OtherLanguage.ENABLE and word_form == WordForm.TRANSLATION.value:
+            is_expansion = True
+        elif flg_input.alias == Alias.ENABLE and word_form == WordForm.ALIAS.value:
+            is_expansion = True
+        elif flg_input.old_name == OldName.ENABLE and word_form == WordForm.OLD_NAME.value:
+            is_expansion = True
+        elif flg_input.misuse == Misuse.ENABLE and word_form == WordForm.MISUSE.value:
+            is_expansion = True
+        if is_expansion:
+            filtered_synonym_group = [s for s in synonym_group if s.lexeme_id == lexeme_id]
+        return filtered_synonym_group
+
+    def get_represent_synonym_group_by_same_word_form(
+        self, flg_input: FlgInput, morpheme: Morpheme, synonym_group: List[Synonym]
+    ) -> List[Synonym]:
+        """
+        同じ語形の同義語グループを取得
+
+        Args:
+            morpheme: 形態素情報
+            synonym_group: 同義語グループ
+        Returns:
+            Synonymオブジェクトのリスト
+        """
+        is_expansion = False
+        filtered_synonym_group = []
+        word_form = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.WORD_FORM)
+        abbreviation = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.ABBREVIATION)
+        if abbreviation == Abbreviation.REPRESENTATIVE.value:
+            is_expansion = True
+        elif (
+            flg_input.alphabetic_abbreviation == AlphabeticAbbreviation.ENABLE
+            and abbreviation == Abbreviation.ALPHABET.value
+        ):
+            is_expansion = True
+        elif (
+            flg_input.non_alphabetic_abbreviation == NonAlphabeticAbbreviation.ENABLE
+            and abbreviation == Abbreviation.NOT_ALPHABET.value
+        ):
+            is_expansion = True
+        if is_expansion:
+            filtered_synonym_group = [s for s in synonym_group if s.word_form == word_form]
+        return filtered_synonym_group
+
+    def get_represent_synonym_group_by_same_abbreviation(
+        self, flg_input: FlgInput, morpheme: Morpheme, synonym_group: List[Synonym]
+    ) -> List[Synonym]:
+        """
+        同じ略語・略称の同義語グループを取得
+
+        Args:
+            morpheme: 形態素情報
+            synonym_group: 同義語グループ
+
+        Returns:
+            Synonymオブジェクトのリスト
+        """
+        is_expansion = False
+        filtered_synonym_group = []
+        abbreviation = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.ABBREVIATION)
+        spelling_inconsistency = self.get_synonym_value_from_morpheme(
+            morpheme, synonym_group, SynonymField.SPELLING_INCONSISTENCY
+        )
+        if spelling_inconsistency == SpellingInconsistency.REPRESENTATIVE.value:
+            is_expansion = True
+        elif flg_input.alphabet == Alphabet.ENABLE and abbreviation == SpellingInconsistency.ALPHABET.value:
+            is_expansion = True
+        elif (
+            flg_input.orthographic_variation == OrthographicVariation.ENABLE
+            and spelling_inconsistency == SpellingInconsistency.ORTHOGRAPHIC_VARIATION.value
+        ):
+            is_expansion = True
+        elif (
+            flg_input.missspelling == Missspelling.ENABLE
+            and spelling_inconsistency == SpellingInconsistency.MISSPELLING.value
+        ):
+            is_expansion = True
+        if is_expansion:
+            filtered_synonym_group = [s for s in synonym_group if s.abbreviation == abbreviation]
+        return filtered_synonym_group
+
+    def __flg_normalize_by_expansion(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
+        """
+        同義語展開の制御フラグによって、正規化するかどうかを判断する
+
+        Args:
+            morpheme: 形態素情報
+            flg_input: 正規化のオプション
+        Returns:
+            正規化する場合はTrue, しない場合はFalse
+        """
+        if flg_input.expansion == Expansion.ANY:
+            return True
+        if flg_input.expansion == Expansion.FROM_ANOTHER:
+            synonym_group = self.get_synonym_group(morpheme)
+            flg_expansion = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.FLG_EXPANSION)
+            if flg_expansion == FlgExpantion.ANY.value:
+                return True
+        return False
 
     def normalize_word_by_custom_synonyms(self, word: str) -> Optional[str]:
         """
@@ -440,25 +668,6 @@ class SynonymNormalizer:
                 return True
         return False
 
-    def __flg_normalize_by_expansion(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
-        """
-        同義語展開の制御フラグによって、正規化するかどうかを判断する
-
-        Args:
-            morpheme: 形態素情報
-            flg_input: 正規化のオプション
-        Returns:
-            正規化する場合はTrue, しない場合はFalse
-        """
-        if flg_input.expansion == Expansion.ANY:
-            return True
-        if flg_input.expansion == Expansion.FROM_ANOTHER:
-            synonym_group = self.get_synonym_group(morpheme)
-            flg_expansion = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.FLG_EXPANSION)
-            if flg_expansion == FlgExpantion.ANY.value:
-                return True
-        return False
-
     def get_morphemes(self, text: str) -> List[str]:
         """
         テキストを形態素解析する
@@ -471,10 +680,16 @@ class SynonymNormalizer:
         tokens = self.tokenizer_obj.tokenize(text, self.mode)
         return [token for token in tokens]
 
-    def get_synonym_group(self, morpheme: Morpheme) -> Optional[List[Synonym]]:
+    def get_synonym_group(self, morpheme: Morpheme, is_yougen: bool, is_taigen: bool) -> Optional[List[Synonym]]:
         synonym_group_ids = morpheme.synonym_group_ids()
         if synonym_group_ids:
-            return self.synonyms[synonym_group_ids[0]]
+            # 同義語グループのIDが1つの場合のみ。複数ある場合は判定できないので、Noneで返す。IDがない場合もNoneで返す
+            if len(synonym_group_ids) == 1:
+                synonym_group = self.synonyms[synonym_group_ids[0]]
+                if is_yougen:
+                    return [s for s in synonym_group if s.taigen_or_yougen == TaigenOrYougen.YOUGEN.value]
+                if is_taigen:
+                    return [s for s in synonym_group if s.taigen_or_yougen == TaigenOrYougen.TAIGEN.value]
         return None
 
     def get_synonym_value_from_morpheme(

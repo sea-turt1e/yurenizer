@@ -45,6 +45,36 @@ class OtherLanguage(Enum):
         return cls(value)
 
 
+class Alias(Enum):
+    # 別称を使用するかどうかのフラグ
+    DISABLE = 0  # 別称を使用しない
+    ENABLE = 1  # 別称を使用する
+
+    @classmethod
+    def from_int(cls, value: int):
+        return cls(value)
+
+
+class OldName(Enum):
+    # 旧称を使用するかどうかのフラグ
+    DISABLE = 0  # 旧称を使用しない
+    ENABLE = 1  # 旧称を使用する
+
+    @classmethod
+    def from_int(cls, value: int):
+        return cls(value)
+
+
+class Misuse(Enum):
+    # 誤用を使用するかどうかのフラグ
+    DISABLE = 0  # 誤用を使用しない
+    ENABLE = 1  # 誤用を使用する
+
+    @classmethod
+    def from_int(cls, value: int):
+        return cls(value)
+
+
 class AlphabeticAbbreviation(Enum):
     # アルファベットの略語を正規化するかどうかのフラグ
     DISABLE = 0  # アルファベットの略語正規化を行わない
@@ -107,13 +137,16 @@ class CusotomSynonym(Enum):
 
 @dataclass
 class FlgInput:
-    yougen: Yougen = Yougen.EXCLUDE
     taigen: Taigen = Taigen.INCLUDE
+    yougen: Yougen = Yougen.EXCLUDE
     expansion: Expansion = Expansion.FROM_ANOTHER
     other_language: OtherLanguage = OtherLanguage.ENABLE
-    alphabet: Alphabet = Alphabet.ENABLE
+    alias: Alias = Alias.ENABLE
+    old_name: OldName = OldName.ENABLE
+    misuse: Misuse = Misuse.ENABLE
     alphabetic_abbreviation: AlphabeticAbbreviation = AlphabeticAbbreviation.ENABLE
     non_alphabetic_abbreviation: NonAlphabeticAbbreviation = NonAlphabeticAbbreviation.ENABLE
+    alphabet: Alphabet = Alphabet.ENABLE
     orthographic_variation: OrthographicVariation = OrthographicVariation.ENABLE
     missspelling: Missspelling = Missspelling.ENABLE
     custom_synonym: CusotomSynonym = CusotomSynonym.ENABLE
