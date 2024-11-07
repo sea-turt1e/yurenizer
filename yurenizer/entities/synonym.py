@@ -17,7 +17,7 @@ class FlgExpantion(Enum):
 
 
 class WordForm(Enum):
-    # 同一後磯内での語形種別
+    # 同一語彙内での語形種別
     REPRESENTATIVE = 0  # 代表語
     TRANSLATION = 1  # 対訳
     ALIAS = 2  # 別称

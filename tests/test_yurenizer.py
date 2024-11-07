@@ -61,7 +61,7 @@ class TestSynonymNormalizer:
         "text,expected",
         [
             ("チェスト", "チェスト"),
-            ("America", "America"),
+            ("America", "アメリカ合衆国"),
             ("checkを行う。", "checkを行う。"),
         ],
     )
@@ -127,11 +127,33 @@ class TestSynonymNormalizer:
         result = normalizer.normalize(text, test_flags)
         assert result == "テトラポッド"
 
-    def test_normalize_kaiso(self, normalizer, default_flags):
+    def test_normalize_kaiso_lexeme(self, normalizer, default_flags):
         text = "single log in"
         test_flags = deepcopy(default_flags)
         result = normalizer.normalize(text, test_flags)
         assert result == "シングルログイン"
+
+    def test_normalize_kaiso_word_form_expansion_any(self, normalizer, default_flags):
+        text = "USA"
+        test_flags = deepcopy(default_flags)
+        test_flags.unify_level = UnifyLevel.WORD_FORM.value
+        test_flags.expansion = Expansion.ANY.value
+        result = normalizer.normalize(text, test_flags)
+        assert result == "アメリカ合衆国"
+
+    def test_normalize_kaiso_word_form_expansion_from_another(self, normalizer, default_flags):
+        text = "アメリカ"
+        test_flags = deepcopy(default_flags)
+        test_flags.unify_level = UnifyLevel.WORD_FORM.value
+        result = normalizer.normalize(text, test_flags)
+        assert result == "アメリカ合衆国"
+
+    def test_normalize_kaiso_abbreviation(self, normalizer, default_flags):
+        text = "America"
+        test_flags = deepcopy(default_flags)
+        test_flags.unify_level = UnifyLevel.ABBREVIATION.value
+        result = normalizer.normalize(text, test_flags)
+        assert result == "アメリカ"
 
     def test_get_morphemes(self, normalizer):
         text = "テストを実行する"

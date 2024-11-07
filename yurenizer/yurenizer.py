@@ -426,7 +426,7 @@ class SynonymNormalizer:
         )
         if spelling_inconsistency == SpellingInconsistency.REPRESENTATIVE.value:
             is_expansion = True
-        elif flg_input.alphabet == Alphabet.ENABLE and abbreviation == SpellingInconsistency.ALPHABET.value:
+        elif flg_input.alphabet == Alphabet.ENABLE and spelling_inconsistency == SpellingInconsistency.ALPHABET.value:
             is_expansion = True
         elif (
             flg_input.orthographic_variation == OrthographicVariation.ENABLE
