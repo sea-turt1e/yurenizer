@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 @dataclass
 class NormalizerConfig:
+    unify_level: str = "lexeme"
     taigen: bool = True
     yougen: bool = False
     expansion: str = "from_another"
@@ -23,11 +24,14 @@ class NormalizerConfig:
     このクラスの各フィールドは、正規化の設定を表すフラグを保持します。
 
     Args:
-        normalize関数の引数に`NormalizerConfig`を指定することで、正規化の制御を行うことができます。
+        unify_level（default="lexeme"）:統一レベルを指定するフラグ。デフォルト"lexeme"はlexeme（語彙素）番号が同じもので統一。"word_form"オプションはwor_form（語形）番号が同じものでの統一。"abbreviation"オプションはabbreviation（略語）番号が同じものでの統一。
         taigen（default=True）: 統一するのに体言を含むかどうかのフラグ。デフォルトは含む。含まない場合はFalseを指定。
         yougen（default=False）: 統一するのに用言を含むかどうかのフラグ。デフォルトは含まない。含む場合はTrueを指定。ただし用言は
         expansion（default="from_another"）: 同義語展開の制御フラグ。デフォルトは同義語辞書の展開制御フラグが0のもののみ展開。"ANY"を指定すると展開制御フラグが常に展開する。
         other_language（default=True）: 日本語以外の言語を日本語に正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
+        alias（default=True）: 別称を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
+        old_name（default=True）: 旧称を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
+        misuse（default=True）: 誤用を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
         alphabetic_abbreviation（default=True）: アルファベットの略語を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
         non_alphabetic_abbreviation（default=True）: 日本語の略語を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
         alphabet（default=True）: アルファベットの表記揺れを正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。

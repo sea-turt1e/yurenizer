@@ -12,6 +12,7 @@ from yurenizer.entities import (
     Missspelling,
     CusotomSynonym,
     OrthographicVariation,
+    UnifyLevel,
     Taigen,
     Yougen,
     OtherLanguage,
@@ -183,6 +184,7 @@ class SynonymNormalizer:
         if not text:
             raise ValueError("テキストが空です")
         flg_input = FlgInput(
+            unify_level=UnifyLevel.from_str(config.unify_level),
             taigen=Taigen.from_int(config.taigen),
             yougen=Yougen.from_int(config.yougen),
             expansion=Expansion.from_str(config.expansion),
@@ -253,10 +255,6 @@ class SynonymNormalizer:
         else:
             return morpheme.surface()
 
-        if morpheme.surface() == "パソコン":
-            import ipdb
-
-            ipdb.set_trace()
         # 体言ごと、または用言ごとの同義語グループを取得
         synonym_group = self.get_synonym_group(morpheme, is_yougen, is_taigen)
         if not synonym_group:
@@ -311,38 +309,6 @@ class SynonymNormalizer:
         if represent_synonym:
             return represent_synonym.lemma
         return morpheme.surface()
-
-        # # 同義語展開するもの
-        # # 用言の場合
-        # if self.yougen_matcher(morpheme) and flg_input.yougen == Yougen.INCLUDE:
-        #     return self.get_standard_yougen(morpheme, flg_input.expansion)
-
-        # # 体言の場合
-        # flg_normalize = False  # 代表表記するかどうか
-        # if self.taigen_matcher(morpheme) and flg_input.taigen == Taigen.INCLUDE:
-        #     if self.__flg_normalize_by_other_language(morpheme, flg_input):
-        #         flg_normalize = True
-        #     elif self.__flg_normalize_by_alphabetic_abbreviation(morpheme, flg_input):
-        #         flg_normalize = True
-        #     elif self.__flg_normalize_by_non_alphabetic_abbreviation(morpheme, flg_input):
-        #         flg_normalize = True
-        #     elif self.__flg_normalize_by_alphabet_notation(morpheme, flg_input):
-        #         flg_normalize = True
-        #     elif self.__flg_normalize_by_orthographic_variation(morpheme, flg_input):
-        #         flg_normalize = True
-        #     elif self.__flg_normalize_by_missspelling(morpheme, flg_input):
-        #         flg_normalize = True
-
-        # if flg_normalize:
-        #     # if flg_input.expansion in (Expansion.ANY, Expansion.FROM_ANOTHER):
-        #     # 同義語グループのIDsを取得
-        #     synonym_group_ids = morpheme.synonym_group_ids()
-        #     if len(synonym_group_ids) > 1:
-        #         return morpheme.surface()
-        #     # 同義語展開
-        #     return self.get_standard_taigen(morpheme, flg_input.expansion)
-
-        # return morpheme.surface()
 
     def is_input_word_expansion_any_or_from_another(self, morpheme: Morpheme, synonym_group: List[Synonym]) -> bool:
         """
@@ -433,7 +399,10 @@ class SynonymNormalizer:
         ):
             is_expansion = True
         if is_expansion:
-            filtered_synonym_group = [s for s in synonym_group if s.word_form == word_form]
+            if flg_input.unify_level == UnifyLevel.LEXEME:
+                return synonym_group
+            elif flg_input.unify_level in (UnifyLevel.WORD_FORM, UnifyLevel.ABBREVIATION):
+                filtered_synonym_group = [s for s in synonym_group if s.word_form == word_form]
         return filtered_synonym_group
 
     def get_represent_synonym_group_by_same_abbreviation(
@@ -470,7 +439,10 @@ class SynonymNormalizer:
         ):
             is_expansion = True
         if is_expansion:
-            filtered_synonym_group = [s for s in synonym_group if s.abbreviation == abbreviation]
+            if flg_input.unify_level in (UnifyLevel.LEXEME, UnifyLevel.WORD_FORM):
+                return synonym_group
+            elif flg_input.unify_level == UnifyLevel.ABBREVIATION:
+                filtered_synonym_group = [s for s in synonym_group if s.abbreviation == abbreviation]
         return filtered_synonym_group
 
     def __flg_normalize_by_expansion(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:

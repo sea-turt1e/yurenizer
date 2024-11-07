@@ -4,6 +4,17 @@ from dataclasses import dataclass
 from enum import Enum
 
 
+class UnifyLevel(Enum):
+    # 統一レベルを指定するフラグ
+    LEXEME = "lexeme"  # 語彙素番号が同じもので統一
+    WORD_FORM = "word_form"  # 語形番号が同じもので統一
+    ABBREVIATION = "abbreviation"  # 略語番号が同じもので統一
+
+    @classmethod
+    def from_str(cls, value: str):
+        return cls(value)
+
+
 class Taigen(Enum):
     # 体言を含むかどうかのフラグ
     EXCLUDE = 0
@@ -137,6 +148,7 @@ class CusotomSynonym(Enum):
 
 @dataclass
 class FlgInput:
+    unify_level: UnifyLevel = UnifyLevel.LEXEME
     taigen: Taigen = Taigen.INCLUDE
     yougen: Yougen = Yougen.EXCLUDE
     expansion: Expansion = Expansion.FROM_ANOTHER

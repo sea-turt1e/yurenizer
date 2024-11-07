@@ -6,18 +6,14 @@ import json
 from copy import deepcopy
 
 from yurenizer.entities import (
-    Taigen,
-    Yougen,
     Expansion,
     OtherLanguage,
     Alphabet,
-    AlphabeticAbbreviation,
     NonAlphabeticAbbreviation,
     OrthographicVariation,
     Missspelling,
-    SynonymField,
-    FlgInput,
     NormalizerConfig,
+    UnifyLevel,
 )
 
 
@@ -131,6 +127,12 @@ class TestSynonymNormalizer:
         result = normalizer.normalize(text, test_flags)
         assert result == "テトラポッド"
 
+    def test_normalize_kaiso(self, normalizer, default_flags):
+        text = "single log in"
+        test_flags = deepcopy(default_flags)
+        result = normalizer.normalize(text, test_flags)
+        assert result == "シングルログイン"
+
     def test_get_morphemes(self, normalizer):
         text = "テストを実行する"
         morphemes = normalizer.get_morphemes(text)
@@ -154,11 +156,22 @@ class TestSynonymNormalizer:
         assert len(synonyms) > 0
         assert all(isinstance(k, str) for k in synonyms.keys())
 
-    def test_normalize_long_text(self, normalizer):
+    def test_normalize_long_text(self, normalizer, default_disabled_flags):
         text = "これは長いテキストのテストです。USAでチェックを行う。パソコンを使う。"
+        test_flags = deepcopy(default_disabled_flags)
+        test_flags.unify_level = "lexeme"
+        test_flags.non_alphabetic_abbreviation = NonAlphabeticAbbreviation.ENABLE.value
         result = normalizer.normalize(text)
         expected = "これは長いテキストのテストです。USAでチェックを行う。パーソナルコンピューターを使う。"
         assert result == expected
+
+    def test_normalize_multiple_synonym_group(self, normalizer, default_flags):
+        "同じ単語で複数の同義語グループがある場合は判定ができないので、元の単語が返される"
+        text = "PC"
+        test_flags = deepcopy(default_flags)
+        test_flags.expansion = Expansion.ANY.value
+        result = normalizer.normalize(text, test_flags)
+        assert result == "PC"
 
     def test_normalize_yougen(self, normalizer, default_disabled_flags):
         text = "ねたむ"
