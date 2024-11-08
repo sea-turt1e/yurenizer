@@ -2,7 +2,7 @@
 Pythonで動作する日本語の表記揺れ対策ツール
 
 English README is here.  
-https://github.com/sea-turt1e/yurenizer/tree/main
+https://github.com/sea-turt1e/yurenizer/blob/main/README.md
 
 ## 概要
 yurenizerは、日本語の表記揺れを検出し、統一するためのツールです。  
