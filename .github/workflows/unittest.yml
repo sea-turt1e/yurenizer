@@ -32,7 +32,7 @@ jobs:
 
     - name: download synonym file
       run: |
-        curl -L -f -o yurenizer/data/synonyms.txt https://raw.githubusercontent.com/WorksApplications/SudachiDict/v20231220/src/main/text/synonyms.txt
+        curl -L -f -o yurenizer/data/synonyms.txt https://raw.githubusercontent.com/WorksApplications/SudachiDict/refs/heads/develop/src/main/text/synonyms.txt
         if [ ! -f yurenizer/data/synonyms.txt ]; then
           echo "Failed to download synonyms.txt"
           exit 1
