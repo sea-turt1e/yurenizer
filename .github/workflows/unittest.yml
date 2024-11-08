@@ -5,11 +5,13 @@ on:
     branches:
       - main
       - develop
+      - release
   workflow_dispatch: 
   push:
     branches:
       - main
       - develop
+      - release
 
 jobs:
   test:
