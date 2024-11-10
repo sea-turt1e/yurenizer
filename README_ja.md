@@ -7,7 +7,7 @@ https://github.com/sea-turt1e/yurenizer/blob/main/README.md
 ## 概要
 yurenizerは、日本語の表記揺れを検出し、統一するためのツールです。  
 例えば、「パソコン」や「パーソナル・コンピュータ」、「パーソナルコンピュータ」などを「パーソナルコンピューター」に統一することができます。  
-このルールは[Sudachi同義語辞書](https://github.com/WorksApplications/SudachiDict/blob/develop/docs/synonyms.md#%E5%90%8C%E7%BE%A9%E8%AA%9E%E8%BE%9E%E6%9B%B8%E3%82%BD%E3%83%BC%E3%82%B9-%E3%83%95%E3%82%A9%E3%83%BC%E3%83%9E%E3%83%83%E3%83%88)に準じています。
+このルールは[Sudachi同義語辞書](https://github.com/WorksApplications/SudachiDict/blob/develop/docs/synonyms.md)に準じています。
 
 
 ## インストール
@@ -56,7 +56,7 @@ expansion（default="from_another"）: 同義語展開の制御フラグ。デ�
 - non_alphabetic_abbreviation（default=True）: 日本語の略語を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
 - alphabet（default=True）: アルファベットの表記揺れを正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
 - orthographic_variation（default=True）: 異表記を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
-- missspelling（default=True）: 誤表記を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
+- misspelling（default=True）: 誤表記を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
 - custom_synonym（default=True）: ユーザーが設定したcustom_synonymを使用するかどうかのフラグ。デフォルトは使用する。使用しない場合はFalseを指定。
 ```
 ## SudachiDictの指定
@@ -105,7 +105,7 @@ normalizer = SynonymNormalizer(custom_synonyms_file="path/to/custom_dict.json")
 本プロジェクトは[Apache License 2.0](LICENSE)の下でライセンスされています。
 
 ### 使用しているオープンソースソフトウェア
-- [Sudachi 同義語辞書](https://github.com/WorksApplications/SudachiDict/blob/develop/docs/synonyms.md#%E5%90%8C%E7%BE%A9%E8%AA%9E%E8%BE%9E%E6%9B%B8%E3%82%BD%E3%83%BC%E3%82%B9-%E3%83%95%E3%82%A9%E3%83%BC%E3%83%9E%E3%83%83%E3%83%88): Apache License 2.0
+- [Sudachi 同義語辞書](https://github.com/WorksApplications/SudachiDict/blob/develop/docs/synonyms.md): Apache License 2.0
 - [SudachiPy](https://github.com/WorksApplications/SudachiPy): Apache License 2.0
 - [SudachiDict](https://github.com/WorksApplications/SudachiDict): Apache License 2.0
 
