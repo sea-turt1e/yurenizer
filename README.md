@@ -16,7 +16,7 @@ pip install yurenizer
 
 ## Download Synonym Dictionary
 ```bash
-curl -L -o data/synonyms.txt https://raw.githubusercontent.com/WorksApplications/SudachiDict/refs/heads/develop/src/main/text/synonyms.txt
+curl -L -o /path/to/synonyms.txt https://raw.githubusercontent.com/WorksApplications/SudachiDict/refs/heads/develop/src/main/text/synonyms.txt
 ```
 
 ## Usage
