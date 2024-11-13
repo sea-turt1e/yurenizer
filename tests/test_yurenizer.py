@@ -1,8 +1,5 @@
 import pytest
-from pathlib import Path
 from yurenizer.yurenizer import SynonymNormalizer
-import os
-import json
 from copy import deepcopy
 
 from yurenizer.entities import (

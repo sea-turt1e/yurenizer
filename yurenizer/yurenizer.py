@@ -40,37 +40,47 @@ class SynonymNormalizer:
         custom_synonyms_file: Optional[str] = None,
     ) -> None:
         """
-        SudachiDictの同義語辞書を使用した表記ゆれ統一ツールの初期化
+        Initialize the tool for unifying spelling variations using SudachiDict's synonym dictionary
+        （SudachiDictの同義語辞書を使用した表記ゆれ統一ツールの初期化）
 
         Args:
-            custom_synonym_file: 追加の同義語定義ファイル（任意）
+            synonym_file_path: Path to the SudachiDict synonym file（SudachiDictの同義語ファイルへのパス）
+            sudachi_dict: SudachiDict type (default: full)（SudachiDictのタイプ（デフォルト: full））
+            custom_synonyms_file: Path to the custom synonym definition file（カスタム同義語定義ファイルへのパス）
+
+        Example:
+            normalizer = SynonymNormalizer(synonym_file_path="synonyms.txt")
         """
-        # Sudachi初期化
+        # Initialize Sudachi
         sudachi_dic = dictionary.Dictionary(dict=sudachi_dict)
         self.tokenizer_obj = sudachi_dic.create()
         self.mode = tokenizer.Tokenizer.SplitMode.C
 
-        # 品詞マッチ
+        # Part-of-speech matching
         self.taigen_matcher = sudachi_dic.pos_matcher(lambda x: x[0] == "名詞")
         self.yougen_matcher = sudachi_dic.pos_matcher(lambda x: x[0] in ["動詞", "形容詞"])
 
-        # SudachiDictの同義語ファイルを読み込み
+        # Load synonyms from SudachiDict's synonym file
         synonyms = self.load_sudachi_synonyms(synonym_file_path)
         self.synonyms = {int(k): v for k, v in synonyms.items()}
 
-        # カスタム同義語の読み込み
+        # Load custom synonyms
         self.custom_synonyms = {}
         if custom_synonyms_file:
             self.custom_synonyms = self.load_custom_synonyms(custom_synonyms_file)
 
     def load_sudachi_synonyms(self, synonym_file: str) -> Dict[int, List[Synonym]]:
         """
-        SudachiDictのsynonyms.txtから同義語情報を読み込む
+        Load synonym information from SudachiDict's synonyms.txt（SudachiDictのsynonyms.txtから同義語情報を読み込む）
 
         Args:
-            synonym_file: 同義語ファイルのパス
+            synonym_file: Path to the SudachiDict synonym file（SudachiDictの同義語ファイルへのパス）
+
         Returns:
-            同義語情報の辞書
+            Synonym information dictionary（同義語情報の辞書）
+
+        Example:
+            synonyms = load_sudachi_synonyms("synonyms.txt")
         """
         with open(synonym_file, "r", encoding="utf-8") as f:
             reader = csv.reader(f)
@@ -82,32 +92,35 @@ class SynonymNormalizer:
                 continue
             synonyms[line[0]].append(
                 Synonym(
-                    taigen_or_yougen=int(line[1]),  # Taigen or Yougen(体言or用言)
-                    flg_expansion=int(line[2]),  # 展開制御フラグ
-                    lexeme_id=int(line[3].split("/")[0]),  # グループ内の語彙素番号
-                    word_form=int(line[4]),  # 同一語彙素内での語形種別
-                    abbreviation=int(line[5]),  # 略語
-                    spelling_inconsistency=int(line[6]),  # 表記揺れ情報
-                    field=line[7],  # 分野情報
-                    lemma=line[8],
-                )  # 見出し語
+                    taigen_or_yougen=int(line[1]),  # Taigen or Yougen
+                    flg_expansion=int(line[2]),  # Expansion control flag
+                    lexeme_id=int(line[3].split("/")[0]),  # Lexeme number within the group
+                    word_form=int(line[4]),  # Word form type within the same lexeme
+                    abbreviation=int(line[5]),  # Abbreviation
+                    spelling_inconsistency=int(line[6]),  # Spelling inconsistency information
+                    field=line[7],  # Field information
+                    lemma=line[8],  # Lemma
+                )
             )
         return synonyms
 
     def load_custom_synonyms(self, file_path: str) -> Dict[str, Set[str]]:
         """
-        カスタム同義語定義を読み込む
+        Load custom synonym definition JSON file（カスタム同義語定義JSONファイルを読み込む）
 
         Args:
-            file_path: 同義語定義JSONファイルのパス
+            file_path: Path to the custom synonym definition JSON file（カスタム同義語定義JSONファイルへのパス）
 
-        JSONフォーマット:
+        JSON format（JSONフォーマット）:
         {
-            "標準形": ["同義語1", "同義語2", ...],
+            "standard_form": ["synonym1", "synonym2", ...],
             ...
         }
         Returns:
-            カスタム同義語定義の辞書 (標準形: (同義語1, 同義語2, ...))
+            Custom synonym definition（カスタム同義語定義）
+
+        Example:
+            custom_synonyms = load_custom_synonyms("custom_synonyms.json")
         """
         try:
             with open(file_path, "r", encoding="utf-8") as f:
@@ -120,15 +133,20 @@ class SynonymNormalizer:
 
     def get_standard_yougen(self, morpheme: Morpheme, expansion: Expansion) -> str:
         """
-        用言の代表表記を取得
+        Get the standard representation of a verb or adjective（動詞または形容詞の標準形を取得）
 
         Args:
-            morpheme: 形態素情報
-            expansion: 同義語展開の制御フラグ
+            morpheme: Morpheme information（形態素情報）
+            expansion: Synonym expansion control flag（同義語展開の制御フラグ）
+
         Returns:
-            標準形（同義語が見つからない場合は元の単語）
+            Standard form（同義語が見つからない場合は元の単語）
+
+        Example:
+            standard_yougen = get_standard_yougen(morpheme, expansion)
         """
-        # グループ辞書から同義語グループを探す
+
+        # Search for synonym group from the group dictionary
         synonym_group = self.get_synonym_group(morpheme)
         if synonym_group:
             yougen_group = [s for s in synonym_group if s.taigen_or_yougen == TaigenOrYougen.YOUGEN.value]
@@ -141,15 +159,19 @@ class SynonymNormalizer:
 
     def get_standard_taigen(self, morpheme: Morpheme, expansion: Expansion) -> str:
         """
-        体言の代表表記を取得
+        Get the standard representation of a noun（名詞の標準形を取得）
 
         Args:
-            morpheme: 形態素情報
-            expansion: 同義語展開の制御フラグ
+            morpheme: Morpheme information（形態素情報）
+            expansion: Synonym expansion control flag（同義語展開の制御フラグ）
+
         Returns:
-            標準形（同義語が見つからない場合は元の単語）
+            Standard form（同義語が見つからない場合は元の単語）
+
+        Example:
+            standard_taigen = get_standard_taigen(morpheme, expansion)
         """
-        # グループ辞書から同義語グループを探す
+        # Search for synonym group from the group dictionary
         synonym_group = self.get_synonym_group(morpheme)
         if synonym_group:
             if expansion == Expansion.ANY:
@@ -160,7 +182,18 @@ class SynonymNormalizer:
         return morpheme.surface()
 
     def get_custom_synonym(self, morpheme: Morpheme) -> Optional[str]:
-        # カスタム同義語定義を使用
+        """
+        Get the custom synonym representation of a word（単語のカスタム同義語表現を取得）
+
+        Args:
+            morpheme: Morpheme information（形態素情報）
+
+        Returns:
+            Custom synonym representation（カスタム同義語表現）
+
+        Example:
+            custom_representation = get_custom_synonym(morpheme)
+        """
         custom_representation = self.normalize_word_by_custom_synonyms(morpheme.surface())
         if custom_representation:
             return custom_representation
@@ -172,13 +205,17 @@ class SynonymNormalizer:
         config: NormalizerConfig = NormalizerConfig(),
     ) -> str:
         """
-        テキストの表記ゆれと同義語を統一する
+        Normalize text by unifying spelling variations and synonyms（表記ゆれと同義語を統一してテキストを正規化する）
 
         Args:
-            config: 正規化のオプション
+            text: Text to normalize（正規化するテキスト）
+            config: Normalization options（正規化オプション）
 
         Returns:
-            正規化された文字列
+            Normalized text（正規化されたテキスト）
+
+        Example:
+            normalized_text = normalize(text)
         """
         if not text:
             raise ValueError("テキストが空です")
@@ -198,7 +235,7 @@ class SynonymNormalizer:
             missspelling=Missspelling.from_int(config.missspelling),
             custom_synonym=CusotomSynonym.from_int(config.custom_synonym),
         )
-        # 条件が階層的になっているので、下位の条件が正だった場合は上位の条件は正とする
+        # Since the conditions are hierarchical, if the lower-level condition is true, the upper-level condition is also set to true
         if (
             flg_input.alphabet == Alphabet.ENABLE
             or flg_input.orthographic_variation == OrthographicVariation.ENABLE
@@ -219,12 +256,17 @@ class SynonymNormalizer:
 
     def __normalize_text(self, text: str, flg_input: FlgInput) -> str:
         """
-        テキストの表記ゆれと同義語を統一する
+        Normalize text by unifying spelling variations and synonyms（表記ゆれと同義語を統一してテキストを正規化する）
 
         Args:
-            text: 正規化する文字列
+            text: Text to normalize（正規化するテキスト）
+            flg_input: Normalization options（正規化オプション）
+
         Returns:
-            正規化された文字列
+            Normalized text（正規化されたテキスト）
+
+        Example:
+            normalized_text = __normalize_text(text, flg_input)
         """
         morphemes = self.get_morphemes(text)
         normalized_parts = []
@@ -234,19 +276,23 @@ class SynonymNormalizer:
 
     def normalize_word(self, morpheme: Morpheme, flg_input: FlgInput) -> str:
         """
-        単語の表記ゆれと同義語を統一する
+        Normalize a word by unifying spelling variations and synonyms（表記ゆれと同義語を統一して単語を正規化する）
 
         Args:
-            morpheme: 形態素情報
-            flg_input: 正規化のオプション
+            morpheme: Morpheme information（形態素情報）
+            flg_input: Normalization options（正規化オプション）
+
         Returns:
-            正規化された文字列
+            Normalized word（正規化された単語）
+
+        Example:
+            normalized_word = normalize_word(morpheme, flg_input)
         """
-        # カスタム同義語定義を使用
+        # Use custom synonym definitions
         custom_representation = self.get_custom_synonym(morpheme)
         if custom_representation:
             return custom_representation
-        # 用言、体言の判定
+        # Determine whether it's yougen or taigen
         is_yougen = self.yougen_matcher(morpheme)
         is_taigen = self.taigen_matcher(morpheme)
         if (flg_input.yougen == Yougen.INCLUDE and is_yougen) or (flg_input.taigen == Taigen.INCLUDE and is_taigen):
@@ -254,12 +300,12 @@ class SynonymNormalizer:
         else:
             return morpheme.surface()
 
-        # 体言ごと、または用言ごとの同義語グループを取得
+        # Get synonym group for each taigen or yougen
         synonym_group = self.get_synonym_group(morpheme, is_yougen, is_taigen)
         if not synonym_group:
             return morpheme.surface()
 
-        # 展開制御フラグによってのちの処理を変える
+        # Change subsequent processing according to the expansion control flag
         if flg_input.expansion == Expansion.ANY:
             if not self.is_input_word_expansion_any_or_from_another(morpheme, synonym_group):
                 return morpheme.surface()
@@ -269,7 +315,7 @@ class SynonymNormalizer:
         else:
             return morpheme.surface()
 
-        # 同一語彙素の同義語グループを絞り込む
+        # Narrow down the synonym group to the same lexeme
         if (
             flg_input.other_language == OtherLanguage.ENABLE
             or flg_input.alias == Alias.ENABLE
@@ -280,7 +326,7 @@ class SynonymNormalizer:
         if not synonym_group:
             return morpheme.surface()
 
-        # 同じ語形の同義語グループを取得
+        # Get the synonym group with the same word form
         if (
             flg_input.alphabetic_abbreviation == AlphabeticAbbreviation.ENABLE
             or flg_input.non_alphabetic_abbreviation == NonAlphabeticAbbreviation.ENABLE
@@ -293,7 +339,7 @@ class SynonymNormalizer:
         if not synonym_group:
             return morpheme.surface()
 
-        # 同じ略語・略称の同義語グループを取得
+        # Get the synonym group with the same abbreviation
         if (
             flg_input.alphabet == Alphabet.ENABLE
             or flg_input.orthographic_variation == OrthographicVariation.ENABLE
@@ -303,7 +349,7 @@ class SynonymNormalizer:
         if not synonym_group:
             return morpheme.surface()
 
-        # 同義語グループから代表表記を取得。展開制御フラグによって絞り込む
+        # Obtain the representative notation from the synonym group. Narrow down according to the expansion control flag
         represent_synonym = synonym_group[0]
         if represent_synonym:
             return represent_synonym.lemma
@@ -311,13 +357,17 @@ class SynonymNormalizer:
 
     def is_input_word_expansion_any_or_from_another(self, morpheme: Morpheme, synonym_group: List[Synonym]) -> bool:
         """
-        入力単語が同義語展開されるかどうかを判断する
+        Judge whether the input word is expanded by synonyms（入力単語が同義語展開されるかどうかを判断する）
 
         Args:
-            morpheme: 形態素情報
-            synonym_group: 同義語グループ
+            morpheme: Morpheme information（形態素情報）
+            synonym_group: Synonym group（同義語グループ）
+
         Returns:
-            同義語展開される場合はTrue, されない場合はFalse
+            True if the input word is expanded by synonyms, False otherwise（同義語展開される場合はTrue, されない場合はFalse）
+
+        Example:
+            is_expansion = is_input_word_expansion_any_or_from_another(morpheme, synonym_group)
         """
         flg_expansion = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.FLG_EXPANSION)
         if flg_expansion in (FlgExpantion.ANY.value, FlgExpantion.FROM_ANOTHER.value):
@@ -326,13 +376,17 @@ class SynonymNormalizer:
 
     def is_input_word_expansion_from_another(self, morpheme: Morpheme, synonym_group: List[Synonym]) -> bool:
         """
-        入力単語が同義語展開されるかどうかを判断する
+        Judge whether the input word is expanded by synonyms from another（入力単語が他の同義語展開されるかどうかを判断する）
 
         Args:
-            morpheme: 形態素情報
-            synonym_group: 同義語グループ
+            morpheme: Morpheme information（形態素情報）
+            synonym_group: Synonym group（同義語グループ）
+
         Returns:
-            同義語展開される場合はTrue, されない場合はFalse
+            True if the input word is expanded by synonyms from another, False otherwise（他の同義語展開される場合はTrue, されない場合はFalse）
+
+        Example:
+            is_expansion = is_input_word_expansion_from_another(morpheme, synonym_group)
         """
         flg_expansion = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.FLG_EXPANSION)
         if flg_expansion == FlgExpantion.ANY.value:
@@ -343,13 +397,17 @@ class SynonymNormalizer:
         self, flg_input: FlgInput, morpheme: Morpheme, synonym_group: List[Synonym]
     ) -> List[Synonym]:
         """
-        同一語彙素の同義語グループを絞り込む
+        Get the synonym group of the same lexeme id（同じ語彙素IDの同義語グループを取得）
 
         Args:
-            morpheme: 形態素情報
-            synonym_group: 同義語グループ
+            morpheme: Morpheme information（形態素情報）
+            synonym_group: Synonym group（同義語グループ）
+
         Returns:
-            Synonymオブジェクトのリスト
+            Synonym object list（Synonymオブジェクトのリスト）
+
+        Example:
+            synonym_group = get_represent_synonym_group_lexeme_id(flg_input, morpheme, synonym_group)
         """
         is_expansion = False
         filtered_synonym_group = []
@@ -373,13 +431,17 @@ class SynonymNormalizer:
         self, flg_input: FlgInput, morpheme: Morpheme, synonym_group: List[Synonym]
     ) -> List[Synonym]:
         """
-        同じ語形の同義語グループを取得
+        Get the synonym group of the same word form（同じ語形の同義語グループを取得）
 
         Args:
-            morpheme: 形態素情報
-            synonym_group: 同義語グループ
+            morpheme: Morpheme information（形態素情報）
+            synonym_group: Synonym group（同義語グループ）
+
         Returns:
-            Synonymオブジェクトのリスト
+            Synonym object list（Synonymオブジェクトのリスト）
+
+        Example:
+            synonym_group = get_represent_synonym_group_by_same_word_form(flg_input, morpheme, synonym_group)
         """
         is_expansion = False
         filtered_synonym_group = []
@@ -408,14 +470,17 @@ class SynonymNormalizer:
         self, flg_input: FlgInput, morpheme: Morpheme, synonym_group: List[Synonym]
     ) -> List[Synonym]:
         """
-        同じ略語・略称の同義語グループを取得
+        Get the synonym group of the same abbreviation（同じ略語・略称の同義語グループを取得）
 
         Args:
-            morpheme: 形態素情報
-            synonym_group: 同義語グループ
+            morpheme: Morpheme information（形態素情報）
+            synonym_group: Synonym group（同義語グループ）
 
         Returns:
-            Synonymオブジェクトのリスト
+            Synonym object list（Synonymオブジェクトのリスト）
+
+        Example:
+            synonym_group = get_represent_synonym_group_by_same_abbreviation(flg_input, morpheme, synonym_group)
         """
         is_expansion = False
         filtered_synonym_group = []
@@ -444,33 +509,18 @@ class SynonymNormalizer:
                 filtered_synonym_group = [s for s in synonym_group if s.abbreviation == abbreviation]
         return filtered_synonym_group
 
-    def __flg_normalize_by_expansion(self, morpheme: Morpheme, flg_input: FlgInput) -> bool:
-        """
-        同義語展開の制御フラグによって、正規化するかどうかを判断する
-
-        Args:
-            morpheme: 形態素情報
-            flg_input: 正規化のオプション
-        Returns:
-            正規化する場合はTrue, しない場合はFalse
-        """
-        if flg_input.expansion == Expansion.ANY:
-            return True
-        if flg_input.expansion == Expansion.FROM_ANOTHER:
-            synonym_group = self.get_synonym_group(morpheme)
-            flg_expansion = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.FLG_EXPANSION)
-            if flg_expansion == FlgExpantion.ANY.value:
-                return True
-        return False
-
     def normalize_word_by_custom_synonyms(self, word: str) -> Optional[str]:
         """
-        カスタム同義語定義を使用して単語を正規化する。なければそのまま返す
+        Normalize a word by custom synonyms（カスタム同義語で単語を正規化する）
 
         Args:
-            word: 正規化する単語
+            word: Word to normalize（正規化する単語）
+
         Returns:
-            正規化された単語
+            Normalized word（正規化された単語）
+
+        Example:
+            normalized_word = normalize_word_by_custom_synonyms(word)
         """
         for k, v in self.custom_synonyms.items():
             if word in v:
@@ -479,20 +529,34 @@ class SynonymNormalizer:
 
     def get_morphemes(self, text: str) -> List[str]:
         """
-        テキストを形態素解析する
+        Get morphemes from text（テキストから形態素を取得）
 
         Args:
-            text: 形態素解析する文字列
+            text: Text to tokenize（トークン化するテキスト）
+
         Returns:
-            形態素のリスト
+            Morphemes（形態素）
         """
         tokens = self.tokenizer_obj.tokenize(text, self.mode)
         return [token for token in tokens]
 
     def get_synonym_group(self, morpheme: Morpheme, is_yougen: bool, is_taigen: bool) -> Optional[List[Synonym]]:
+        """
+        Get the synonym group of the morpheme（形態素の同義語グループを取得）
+
+        Args:
+            morpheme: Morpheme information（形態素情報）
+
+        Returns:
+            Synonym group（同義語グループ）
+
+        Example:
+            synonym_group = get_synonym_group(morpheme)
+        """
+
         synonym_group_ids = morpheme.synonym_group_ids()
         if synonym_group_ids:
-            # 同義語グループのIDが1つの場合のみ。複数ある場合は判定できないので、Noneで返す。IDがない場合もNoneで返す
+            # Only when there is one synonym group ID. If there are multiple, we cannot determine, so return None. If there is no ID, also return None.
             if len(synonym_group_ids) == 1:
                 synonym_group = self.synonyms[synonym_group_ids[0]]
                 if is_yougen:
