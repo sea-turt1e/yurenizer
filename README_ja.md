@@ -38,7 +38,7 @@ normalize関数の引数に`NormalizerConfig`を指定することで、正規�
 from yurenizer import SynonymNormalizer, NormalizerConfig
 normalizer = SynonymNormalizer(synonym_file_path="path/to/synonym_file_path")
 text = "パソコンはパーソナルコンピュータの同義語です"
-config = NormalizerConfig(taigen=True, yougen=False, expansion="from_another", other_language=False, alphabet=False, alphabetic_abbreviation=False, non_alphabetic_abbreviation=False, orthographic_variation=False, missspelling=False)
+config = NormalizerConfig(taigen=True, yougen=False, expansion="from_another", other_language=False, alphabet=False, alphabetic_abbreviation=False, non_alphabetic_abbreviation=False, orthographic_variation=False, misspelling=False)
 print(normalizer.normalize(text, config))
 # 出力: パソコンはパーソナルコンピュータの同義語で、パーソナル・コンピュータと言ったりパーソナル・コンピューターと言ったりします。
 ```

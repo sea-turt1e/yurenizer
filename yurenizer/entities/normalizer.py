@@ -15,7 +15,7 @@ class NormalizerConfig:
     non_alphabetic_abbreviation: bool = True
     alphabet: bool = True
     orthographic_variation: bool = True
-    missspelling: bool = True
+    misspelling: bool = True
     custom_synonym: bool = True
 
     """

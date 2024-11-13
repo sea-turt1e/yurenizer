@@ -8,7 +8,7 @@ from yurenizer.entities import (
     Alphabet,
     NonAlphabeticAbbreviation,
     OrthographicVariation,
-    Missspelling,
+    Misspelling,
     NormalizerConfig,
     UnifyLevel,
 )
@@ -50,7 +50,7 @@ class TestSynonymNormalizer:
             alphabetic_abbreviation=False,
             non_alphabetic_abbreviation=False,
             orthographic_variation=False,
-            missspelling=False,
+            misspelling=False,
             custom_synonym=False,
         )
 
@@ -120,7 +120,7 @@ class TestSynonymNormalizer:
     def test_normalize_misspelling(self, normalizer, default_disabled_flags):
         text = "テトラポット"
         test_flags = deepcopy(default_disabled_flags)
-        test_flags.missspelling = Missspelling.ENABLE.value
+        test_flags.misspelling = Misspelling.ENABLE.value
         result = normalizer.normalize(text, test_flags)
         assert result == "テトラポッド"
 

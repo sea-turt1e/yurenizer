@@ -126,7 +126,7 @@ class OrthographicVariation(Enum):
         return cls(value)
 
 
-class Missspelling(Enum):
+class Misspelling(Enum):
     # Flag to normalize misspellings（誤表記を正規化するかどうかのフラグ）
     DISABLE = 0  # Do not normalize misspellings（誤字を正規化しない）
     ENABLE = 1  # Normalize misspellings（誤字を正規化する）
@@ -160,5 +160,5 @@ class FlgInput:
     non_alphabetic_abbreviation: NonAlphabeticAbbreviation = NonAlphabeticAbbreviation.ENABLE
     alphabet: Alphabet = Alphabet.ENABLE
     orthographic_variation: OrthographicVariation = OrthographicVariation.ENABLE
-    missspelling: Missspelling = Missspelling.ENABLE
+    misspelling: Misspelling = Misspelling.ENABLE
     custom_synonym: CusotomSynonym = CusotomSynonym.ENABLE
