@@ -16,7 +16,7 @@ pip install yurenizer
 
 ## Download Synonym Dictionary
 ```bash
-curl -L -o data/synonyms.txt https://raw.githubusercontent.com/WorksApplications/SudachiDict/refs/heads/develop/src/main/text/synonyms.txt
+curl -L -o /path/to/synonyms.txt https://raw.githubusercontent.com/WorksApplications/SudachiDict/refs/heads/develop/src/main/text/synonyms.txt
 ```
 
 ## Usage
@@ -37,7 +37,7 @@ You can control normalization by specifying `NormalizerConfig` as an argument to
 from yurenizer import SynonymNormalizer, NormalizerConfig
 normalizer = SynonymNormalizer(synonym_file_path="path/to/synonym_file_path")
 text = "パソコンはパーソナルコンピュータの同義語です"
-config = NormalizerConfig(taigen=True, yougen=False, expansion="from_another", other_language=False, alphabet=False, alphabetic_abbreviation=False, non_alphabetic_abbreviation=False, orthographic_variation=False, missspelling=False)
+config = NormalizerConfig(taigen=True, yougen=False, expansion="from_another", other_language=False, alphabet=False, alphabetic_abbreviation=False, non_alphabetic_abbreviation=False, orthographic_variation=False, misspelling=False)
 print(normalizer.normalize(text, config))
 # Output: パソコンはパーソナルコンピュータの同義語で、パーソナル・コンピュータと言ったりパーソナル・コンピューターと言ったりします。
 ```
