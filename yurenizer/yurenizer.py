@@ -9,7 +9,7 @@ from yurenizer.entities import (
     Expansion,
     FlgInput,
     NonAlphabeticAbbreviation,
-    Missspelling,
+    Misspelling,
     CusotomSynonym,
     OrthographicVariation,
     UnifyLevel,
@@ -232,14 +232,14 @@ class SynonymNormalizer:
             non_alphabetic_abbreviation=NonAlphabeticAbbreviation.from_int(config.non_alphabetic_abbreviation),
             alphabet=Alphabet.from_int(config.alphabet),
             orthographic_variation=OrthographicVariation.from_int(config.orthographic_variation),
-            missspelling=Missspelling.from_int(config.missspelling),
+            misspelling=Misspelling.from_int(config.misspelling),
             custom_synonym=CusotomSynonym.from_int(config.custom_synonym),
         )
         # Since the conditions are hierarchical, if the lower-level condition is true, the upper-level condition is also set to true
         if (
             flg_input.alphabet == Alphabet.ENABLE
             or flg_input.orthographic_variation == OrthographicVariation.ENABLE
-            or flg_input.missspelling == Missspelling.ENABLE
+            or flg_input.misspelling == Misspelling.ENABLE
         ):
             flg_input.alphabetic_abbreviation = AlphabeticAbbreviation.ENABLE
             flg_input.non_alphabetic_abbreviation = NonAlphabeticAbbreviation.ENABLE
@@ -332,7 +332,7 @@ class SynonymNormalizer:
             or flg_input.non_alphabetic_abbreviation == NonAlphabeticAbbreviation.ENABLE
             or flg_input.alphabet == Alphabet.ENABLE
             or flg_input.orthographic_variation == OrthographicVariation.ENABLE
-            or flg_input.missspelling == Missspelling.ENABLE
+            or flg_input.misspelling == Misspelling.ENABLE
         ):
             synonym_group = self.get_represent_synonym_group_by_same_word_form(flg_input, morpheme, synonym_group)
 
@@ -343,7 +343,7 @@ class SynonymNormalizer:
         if (
             flg_input.alphabet == Alphabet.ENABLE
             or flg_input.orthographic_variation == OrthographicVariation.ENABLE
-            or flg_input.missspelling == Missspelling.ENABLE
+            or flg_input.misspelling == Misspelling.ENABLE
         ):
             synonym_group = self.get_represent_synonym_group_by_same_abbreviation(flg_input, morpheme, synonym_group)
         if not synonym_group:
@@ -498,7 +498,7 @@ class SynonymNormalizer:
         ):
             is_expansion = True
         elif (
-            flg_input.missspelling == Missspelling.ENABLE
+            flg_input.misspelling == Misspelling.ENABLE
             and spelling_inconsistency == SpellingInconsistency.MISSPELLING.value
         ):
             is_expansion = True
