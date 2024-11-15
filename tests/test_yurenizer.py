@@ -69,15 +69,35 @@ class TestSynonymNormalizer:
     @pytest.mark.parametrize(
         "text,expansion,expected",
         [
-            ("USA", Expansion.ANY.value, "アメリカ合衆国"),
+            ("USA", Expansion.ANY.value, "USA"),
             ("USA", Expansion.FROM_ANOTHER.value, "USA"),
-            ("チェック", Expansion.ANY.value, "確認"),
+            ("チェック", Expansion.ANY.value, "チェック"),
             ("チェック", Expansion.FROM_ANOTHER.value, "チェック"),
         ],
     )
-    def test_normalize_with_different_expansions(self, normalizer, default_disabled_flags, text, expansion, expected):
-        # expansionフラグはTrueだが、それ以外は全てFalseなので、同義語展開は行われない
+    def test_normalize_with_different_expansions_disabled_flags(
+        self, normalizer, default_disabled_flags, text, expansion, expected
+    ):
+        # expansionフラグはバラバラだが、それ以外は全てFalseなので、同義語展開は行われない
         test_flags = deepcopy(default_disabled_flags)
+        test_flags.expansion = expansion
+        result = normalizer.normalize(text, test_flags)
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        "text,expansion,expected",
+        [
+            ("USA", Expansion.ANY.value, "アメリカ合衆国"),
+            ("USA", Expansion.FROM_ANOTHER.value, "USA"),
+            ("チェック", Expansion.ANY.value, "チェック"),
+            ("チェック", Expansion.FROM_ANOTHER.value, "チェック"),
+        ],
+    )
+    def test_normalize_with_different_expansions_enabled_flags(
+        self, normalizer, default_flags, text, expansion, expected
+    ):
+        # expansionフラグはTrueで、それ以外も全てTrueなので、同義語展開が行われる。ただし「チェック」は同じ語彙の語がないので変換されない
+        test_flags = deepcopy(default_flags)
         test_flags.expansion = expansion
         result = normalizer.normalize(text, test_flags)
         assert result == expected
@@ -213,3 +233,8 @@ class TestSynonymNormalizer:
     def test_load_sudachi_synonyms_file_not_found(self, normalizer):
         with pytest.raises(FileNotFoundError):
             normalizer.load_sudachi_synonyms("non_existent_file.txt")
+
+    def test_not_normalize(self, normalizer, default_disabled_flags):
+        text = "バスケ"
+        result = normalizer.normalize(text, default_disabled_flags)
+        assert result == text

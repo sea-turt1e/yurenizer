@@ -300,6 +300,19 @@ class SynonymNormalizer:
         else:
             return morpheme.surface()
 
+        if not is_yougen and True not in [
+            flg_input.other_language.value,
+            flg_input.alias.value,
+            flg_input.old_name.value,
+            flg_input.misuse.value,
+            flg_input.alphabetic_abbreviation.value,
+            flg_input.non_alphabetic_abbreviation.value,
+            flg_input.alphabet.value,
+            flg_input.orthographic_variation.value,
+            flg_input.misspelling.value,
+        ]:
+            return morpheme.surface()
+
         # Get synonym group for each taigen or yougen
         synonym_group = self.get_synonym_group(morpheme, is_yougen, is_taigen)
         if not synonym_group:
