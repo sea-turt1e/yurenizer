@@ -1,5 +1,5 @@
 # yurenizer
-Pythonで動作する日本語の表記揺れ対策ツール
+Pythonで動作する日本語の表記統一ツール
 
 English README is here.  
 https://github.com/sea-turt1e/yurenizer/blob/main/README.md

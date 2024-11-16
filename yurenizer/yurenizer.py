@@ -41,7 +41,7 @@ class SynonymNormalizer:
     ) -> None:
         """
         Initialize the tool for unifying spelling variations using SudachiDict's synonym dictionary
-        （SudachiDictの同義語辞書を使用した表記ゆれ統一ツールの初期化）
+        （SudachiDictの同義語辞書を使用した表記揺れ統一ツールの初期化）
 
         Args:
             synonym_file_path: Path to the SudachiDict synonym file（SudachiDictの同義語ファイルへのパス）
@@ -205,7 +205,7 @@ class SynonymNormalizer:
         config: NormalizerConfig = NormalizerConfig(),
     ) -> str:
         """
-        Normalize text by unifying spelling variations and synonyms（表記ゆれと同義語を統一してテキストを正規化する）
+        Normalize text by unifying spelling variations and synonyms（表記揺れと同義語を統一してテキストを正規化する）
 
         Args:
             text: Text to normalize（正規化するテキスト）
@@ -256,7 +256,7 @@ class SynonymNormalizer:
 
     def __normalize_text(self, text: str, flg_input: FlgInput) -> str:
         """
-        Normalize text by unifying spelling variations and synonyms（表記ゆれと同義語を統一してテキストを正規化する）
+        Normalize text by unifying spelling variations and synonyms（表記揺れと同義語を統一してテキストを正規化する）
 
         Args:
             text: Text to normalize（正規化するテキスト）
@@ -276,7 +276,7 @@ class SynonymNormalizer:
 
     def normalize_word(self, morpheme: Morpheme, flg_input: FlgInput) -> str:
         """
-        Normalize a word by unifying spelling variations and synonyms（表記ゆれと同義語を統一して単語を正規化する）
+        Normalize a word by unifying spelling variations and synonyms（表記揺れと同義語を統一して単語を正規化する）
 
         Args:
             morpheme: Morpheme information（形態素情報）
