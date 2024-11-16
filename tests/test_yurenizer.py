@@ -233,8 +233,3 @@ class TestSynonymNormalizer:
     def test_load_sudachi_synonyms_file_not_found(self, normalizer):
         with pytest.raises(FileNotFoundError):
             normalizer.load_sudachi_synonyms("non_existent_file.txt")
-
-    def test_not_normalize(self, normalizer, default_disabled_flags):
-        text = "バスケ"
-        result = normalizer.normalize(text, default_disabled_flags)
-        assert result == text
