@@ -252,6 +252,15 @@ class SynonymNormalizer:
             flg_input.alias = Alias.ENABLE
             flg_input.old_name = OldName.ENABLE
             flg_input.misuse = Misuse.ENABLE
+
+        # If all flags are disabled, return the original text
+        if (
+            flg_input.other_language == OtherLanguage.DISABLE
+            and flg_input.alias == Alias.DISABLE
+            and flg_input.old_name == OldName.DISABLE
+            and flg_input.misuse == Misuse.DISABLE
+        ):
+            return text
         return self.__normalize_text(text=text, flg_input=flg_input)
 
     def __normalize_text(self, text: str, flg_input: FlgInput) -> str:
