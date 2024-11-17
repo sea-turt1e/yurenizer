@@ -41,7 +41,7 @@ class SynonymNormalizer:
     ) -> None:
         """
         Initialize the tool for unifying spelling variations using SudachiDict's synonym dictionary
-        （SudachiDictの同義語辞書を使用した表記ゆれ統一ツールの初期化）
+        （SudachiDictの同義語辞書を使用した表記揺れ統一ツールの初期化）
 
         Args:
             synonym_file_path: Path to the SudachiDict synonym file（SudachiDictの同義語ファイルへのパス）
@@ -205,7 +205,7 @@ class SynonymNormalizer:
         config: NormalizerConfig = NormalizerConfig(),
     ) -> str:
         """
-        Normalize text by unifying spelling variations and synonyms（表記ゆれと同義語を統一してテキストを正規化する）
+        Normalize text by unifying spelling variations and synonyms（表記揺れと同義語を統一してテキストを正規化する）
 
         Args:
             text: Text to normalize（正規化するテキスト）
@@ -252,11 +252,21 @@ class SynonymNormalizer:
             flg_input.alias = Alias.ENABLE
             flg_input.old_name = OldName.ENABLE
             flg_input.misuse = Misuse.ENABLE
+
+        # If all flags are disabled, return the original text
+        if (
+            flg_input.custom_synonym == CusotomSynonym.DISABLE
+            and flg_input.other_language == OtherLanguage.DISABLE
+            and flg_input.alias == Alias.DISABLE
+            and flg_input.old_name == OldName.DISABLE
+            and flg_input.misuse == Misuse.DISABLE
+        ):
+            return text
         return self.__normalize_text(text=text, flg_input=flg_input)
 
     def __normalize_text(self, text: str, flg_input: FlgInput) -> str:
         """
-        Normalize text by unifying spelling variations and synonyms（表記ゆれと同義語を統一してテキストを正規化する）
+        Normalize text by unifying spelling variations and synonyms（表記揺れと同義語を統一してテキストを正規化する）
 
         Args:
             text: Text to normalize（正規化するテキスト）
@@ -276,7 +286,7 @@ class SynonymNormalizer:
 
     def normalize_word(self, morpheme: Morpheme, flg_input: FlgInput) -> str:
         """
-        Normalize a word by unifying spelling variations and synonyms（表記ゆれと同義語を統一して単語を正規化する）
+        Normalize a word by unifying spelling variations and synonyms（表記揺れと同義語を統一して単語を正規化する）
 
         Args:
             morpheme: Morpheme information（形態素情報）
@@ -292,12 +302,33 @@ class SynonymNormalizer:
         custom_representation = self.get_custom_synonym(morpheme)
         if custom_representation:
             return custom_representation
+        # If all flags are disabled, return the original word
+        if (
+            flg_input.other_language == OtherLanguage.DISABLE
+            and flg_input.alias == Alias.DISABLE
+            and flg_input.old_name == OldName.DISABLE
+            and flg_input.misuse == Misuse.DISABLE
+        ):
+            return morpheme.surface()
         # Determine whether it's yougen or taigen
         is_yougen = self.yougen_matcher(morpheme)
         is_taigen = self.taigen_matcher(morpheme)
         if (flg_input.yougen == Yougen.INCLUDE and is_yougen) or (flg_input.taigen == Taigen.INCLUDE and is_taigen):
             pass
         else:
+            return morpheme.surface()
+
+        if not is_yougen and True not in [
+            flg_input.other_language.value,
+            flg_input.alias.value,
+            flg_input.old_name.value,
+            flg_input.misuse.value,
+            flg_input.alphabetic_abbreviation.value,
+            flg_input.non_alphabetic_abbreviation.value,
+            flg_input.alphabet.value,
+            flg_input.orthographic_variation.value,
+            flg_input.misspelling.value,
+        ]:
             return morpheme.surface()
 
         # Get synonym group for each taigen or yougen
