@@ -46,9 +46,9 @@ class TestSynonymNormalizer:
             alias=False,
             old_name=False,
             misuse=False,
-            alphabet=False,
             alphabetic_abbreviation=False,
             non_alphabetic_abbreviation=False,
+            alphabet=False,
             orthographic_variation=False,
             misspelling=False,
             custom_synonym=False,
@@ -99,6 +99,20 @@ class TestSynonymNormalizer:
         # expansionフラグはTrueで、それ以外も全てTrueなので、同義語展開が行われる。ただし「チェック」は同じ語彙の語がないので変換されない
         test_flags = deepcopy(default_flags)
         test_flags.expansion = expansion
+        result = normalizer.normalize(text, test_flags)
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        "text,expected",
+        [
+            ("JR東日本", "JR東日本"),
+            ("JR東", "JR東"),
+            ("JR-East", "JR-East"),
+        ],
+    )
+    def test_normalize_not_selected(self, normalizer, default_disabled_flags, text, expected):
+        # flg_inputが全てFalseなので、同義語展開は行われない
+        test_flags = deepcopy(default_disabled_flags)
         result = normalizer.normalize(text, test_flags)
         assert result == expected
 
@@ -216,6 +230,7 @@ class TestSynonymNormalizer:
         text = "ねたむ"
         test_flags = deepcopy(default_disabled_flags)
         test_flags.yougen = True
+        test_flags.orthographic_variation = OrthographicVariation.ENABLE.value
         result = normalizer.normalize(text, test_flags)
         assert result == "妬む"
 

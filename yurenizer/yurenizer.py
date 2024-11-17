@@ -255,7 +255,8 @@ class SynonymNormalizer:
 
         # If all flags are disabled, return the original text
         if (
-            flg_input.other_language == OtherLanguage.DISABLE
+            flg_input.custom_synonym == CusotomSynonym.DISABLE
+            and flg_input.other_language == OtherLanguage.DISABLE
             and flg_input.alias == Alias.DISABLE
             and flg_input.old_name == OldName.DISABLE
             and flg_input.misuse == Misuse.DISABLE
@@ -301,6 +302,14 @@ class SynonymNormalizer:
         custom_representation = self.get_custom_synonym(morpheme)
         if custom_representation:
             return custom_representation
+        # If all flags are disabled, return the original word
+        if (
+            flg_input.other_language == OtherLanguage.DISABLE
+            and flg_input.alias == Alias.DISABLE
+            and flg_input.old_name == OldName.DISABLE
+            and flg_input.misuse == Misuse.DISABLE
+        ):
+            return morpheme.surface()
         # Determine whether it's yougen or taigen
         is_yougen = self.yougen_matcher(morpheme)
         is_taigen = self.taigen_matcher(morpheme)
