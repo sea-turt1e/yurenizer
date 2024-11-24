@@ -37,17 +37,31 @@ normalize関数の引数に`NormalizerConfig`を指定することで、正規�
 ```python
 from yurenizer import SynonymNormalizer, NormalizerConfig
 normalizer = SynonymNormalizer(synonym_file_path="path/to/synonym_file_path")
-text = "パソコンはパーソナルコンピュータの同義語です"
-config = NormalizerConfig(taigen=True, yougen=False, expansion="from_another", other_language=False, alphabet=False, alphabetic_abbreviation=False, non_alphabetic_abbreviation=False, orthographic_variation=False, misspelling=False)
-print(normalizer.normalize(text, config))
-# 出力: パソコンはパーソナルコンピュータの同義語で、パーソナル・コンピュータと言ったりパーソナル・コンピューターと言ったりします。
+text = "「東日本旅客鉄道」は「JR東」や「JR-East」とも呼ばれます"
+config = NormalizerConfig(
+            unify_level="lexeme",
+            taigen=True, 
+            yougen=False,
+            expansion="from_another", 
+            other_language=False,
+            alias=False,
+            old_name=False,
+            misuse=False,
+            alphabetic_abbreviation=True, # アルファベットの略語のみを正規化する
+            non_alphabetic_abbreviation=False,
+            alphabet=False,
+            orthographic_variation=False,
+            misspelling=False
+        )
+print(f"出力: {normalizer.normalize(text, config)}")
+# 出力: 「東日本旅客鉄道」は「JR東」や「東日本旅客鉄道」とも呼ばれます
 ```
 
 #### 設定の詳細
 - unify_level（default="lexeme"）: 統一レベルを指定するフラグ。デフォルト"lexeme"はlexeme（語彙素）番号が同じもので統一。"word_form"オプションはwor_form（語形）番号が同じものでの統一。"abbreviation"オプションはabbreviation（略語）番号が同じものでの統一。
 - taigen（default=True）: 統一するのに体言を含むかどうかのフラグ。デフォルトは含む。含まない場合はFalseを指定。
-- yougen（default=False）: 統一するのに用言を含むかどうかのフラグ。デフォルトは含まない。含む場合はTrueを指定。ただし用言は見出し語に統一されます。
-- expansion（default="from_another"）: 同義語展開の制御フラグ。デフォルトは同義語辞書の展開制御フラグが0のもののみ展開。"ANY"を指定すると展開制御フラグが常に展開する。
+- yougen（default=False）: 統一するのに用言を含むかどうかのフラグ。デフォルトは含まない。含む場合はTrueを指定。ただし用言は見出し語に統一される。
+- expansion（default="from_another"）: 同義語展開の制御フラグ。デフォルトは同義語辞書の展開制御フラグが0のもののみ展開。"ANY"を指定すると展開制御フラグに関係なく常に展開する。
 - other_language（default=True）: 日本語以外の言語を日本語に正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
 - alias（default=True）: 別称を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
 - old_name（default=True）: 旧称を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
