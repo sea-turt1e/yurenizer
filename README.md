@@ -45,7 +45,7 @@ print(normalizer.normalize(text, config))
 #### Configuration Details
 - unify_level (default="lexeme"): Flag to specify unification level. Default "lexeme" unifies based on lexeme number. "word_form" option unifies based on word form number. "abbreviation" option unifies based on abbreviation number.
 - taigen (default=True): Flag to include nouns in unification. Default is to include. Specify False to exclude.
-- yougen (default=False): Flag to include conjugated words in unification. Default is to exclude. Specify True to include.
+- yougen (default=False): Flag to include conjugated words in unification. Default is to exclude. Specify True to include. However, conjugated words are unified to the headword.
 - expansion (default="from_another"): Synonym expansion control flag. Default only expands those with expansion control flag 0. Specify "ANY" to always expand.
 - other_language (default=True): Flag to normalize non-Japanese languages to Japanese. Default is to normalize. Specify False to disable.
 - alias (default=True): Flag to normalize aliases. Default is to normalize. Specify False to disable.
