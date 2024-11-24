@@ -36,10 +36,24 @@ You can control normalization by specifying `NormalizerConfig` as an argument to
 ```python
 from yurenizer import SynonymNormalizer, NormalizerConfig
 normalizer = SynonymNormalizer(synonym_file_path="path/to/synonym_file_path")
-text = "パソコンはパーソナルコンピュータの同義語です"
-config = NormalizerConfig(taigen=True, yougen=False, expansion="from_another", other_language=False, alphabet=False, alphabetic_abbreviation=False, non_alphabetic_abbreviation=False, orthographic_variation=False, misspelling=False)
-print(normalizer.normalize(text, config))
-# Output: パソコンはパーソナルコンピュータの同義語で、パーソナル・コンピュータと言ったりパーソナル・コンピューターと言ったりします。
+text = "「東日本旅客鉄道」は「JR東」や「JR-East」とも呼ばれます"
+config = NormalizerConfig(
+            unify_level="lexeme",
+            taigen=True, 
+            yougen=False,
+            expansion="from_another", 
+            other_language=False,
+            alias=False,
+            old_name=False,
+            misuse=False,
+            alphabetic_abbreviation=True, # Normalize only alphabetic abbreviations
+            non_alphabetic_abbreviation=False,
+            alphabet=False,
+            orthographic_variation=False,
+            misspelling=False
+        )
+print(f"Output: {normalizer.normalize(text, config)}")
+# Output: 「東日本旅客鉄道」は「JR東」や「東日本旅客鉄道」とも呼ばれます
 ```
 
 #### Configuration Details
