@@ -76,7 +76,7 @@ print(f"出力: {normalizer.normalize(text, config)}")
 - orthographic_variation（default=True）: 異表記を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
 - misspelling（default=True）: 誤表記を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
 - custom_synonym（default=True）: ユーザーが設定したcustom_synonymを使用するかどうかのフラグ。デフォルトは使用する。使用しない場合はFalseを指定。
-```
+
 ## SudachiDictの指定
 SudachiDictの種類によって分割される長さが変わります。デフォルトは"full"ですが、"small"、または"core"を指定することができます。  
 "small"または"core"を指定する場合はインストールして、`SynonymNormalizer()`の引数に指定してください。
