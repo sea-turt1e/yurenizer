@@ -9,6 +9,10 @@ yurenizerは、日本語の表記揺れを検出し、統一するためのツ�
 例えば、「パソコン」や「パーソナル・コンピュータ」、「パーソナルコンピュータ」などを「パーソナルコンピューター」に統一することができます。  
 このルールは[Sudachi同義語辞書](https://github.com/WorksApplications/SudachiDict/blob/develop/docs/synonyms.md)に準じています。
 
+## Webデモ
+yunenizerのWebデモを以下のリンクから利用できます。  
+[yurenizer Web-demo](https://yurenizer.net/)
+
 
 ## インストール
 ```bash
@@ -114,6 +118,10 @@ normalizer = SynonymNormalizer(sudachi_dict="core")
 ```python
 normalizer = SynonymNormalizer(custom_synonyms_file="path/to/custom_dict.json")
 ```
+
+## Zenn解説記事
+yurenizerの解説記事をZennに投稿しています。  
+[ルールベースで表記揺れを解消！Pythonライブラリ「yurenizer」](https://zenn.dev/sea_turt1e/articles/afbe326366f1e7)
 
 ## ライセンス
 本プロジェクトは[Apache License 2.0](LICENSE)の下でライセンスされています。

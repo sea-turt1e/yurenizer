@@ -9,6 +9,10 @@ yurenizer is a tool for detecting and unifying variations in Japanese text notat
 For example, it can unify variations like "パソコン" (pasokon), "パーソナル・コンピュータ" (personal computer), and "パーソナルコンピュータ" into "パーソナルコンピューター".  
 These rules follow the [Sudachi Synonym Dictionary](https://github.com/WorksApplications/SudachiDict/blob/develop/docs/synonyms.md).
 
+## web-based Demo
+You can try the web-based demo here.  
+[yurenizer Web-demo](https://yurenizer.net/)
+
 ## Installation
 ```bash
 pip install yurenizer
