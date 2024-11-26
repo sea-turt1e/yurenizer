@@ -1,3 +1,7 @@
+![Python](https://img.shields.io/badge/-Python-F9DC3E.svg?logo=python&style=flat)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+![PyPI Downloads](https://static.pepy.tech/badge/yurenizer)
+
 # yurenizer
 This is a Japanese text normalizer that resolves spelling inconsistencies.
 
@@ -11,7 +15,8 @@ These rules follow the [Sudachi Synonym Dictionary](https://github.com/WorksAppl
 
 ## web-based Demo
 You can try the web-based demo here.  
-[yurenizer Web-demo](https://yurenizer.net/)
+[yurenizer Web-demo](https://yurenizer.net/)  
+<div><video controls src="https://github.com/user-attachments/assets/fdcbaa1a-5692-4c30-a8e1-188d5016443d" muted="false"></video></div>
 
 ## Installation
 ```bash
@@ -60,22 +65,95 @@ print(f"Output: {normalizer.normalize(text, config)}")
 # Output: 「東日本旅客鉄道」は「JR東」や「東日本旅客鉄道」とも呼ばれます
 ```
 
-#### Configuration Details
-- unify_level (default="lexeme"): Flag to specify unification level. Default "lexeme" unifies based on lexeme number. "word_form" option unifies based on word form number. "abbreviation" option unifies based on abbreviation number.
-- taigen (default=True): Flag to include nouns in unification. Default is to include. Specify False to exclude.
-- yougen (default=False): Flag to include conjugated words in unification. Default is to exclude. Specify True to include. However, conjugated words are unified to the headword.
-- expansion (default="from_another"): Synonym expansion control flag. Default only expands those with expansion control flag 0. Specify "ANY" to always expand.
-- other_language (default=True): Flag to normalize non-Japanese languages to Japanese. Default is to normalize. Specify False to disable.
-- alias (default=True): Flag to normalize aliases. Default is to normalize. Specify False to disable.
-- old_name (default=True): Flag to normalize old names. Default is to normalize. Specify False to disable.
-- misuse (default=True): Flag to normalize misused terms. Default is to normalize. Specify False to disable.
-- alphabetic_abbreviation (default=True): Flag to normalize alphabetic abbreviations. Default is to normalize. Specify False to disable.
-- non_alphabetic_abbreviation (default=True): Flag to normalize Japanese abbreviations. Default is to normalize. Specify False to disable.
-- alphabet (default=True): Flag to normalize alphabet variations. Default is to normalize. Specify False to disable.
-- orthographic_variation (default=True): Flag to normalize orthographic variations. Default is to normalize. Specify False to disable.
-- misspelling (default=True): Flag to normalize misspellings. Default is to normalize. Specify False to disable.
-- custom_synonym (default=True): Flag to use user-defined custom synonyms. Default is to use. Specify False to disable.
 
+---
+
+## **Configuration Details**
+
+The settings in *yurenizer* are organized hierarchically, allowing you to control the scope and target of normalization.
+
+---
+
+### **1. unify_level (Normalization Level)**
+
+First, specify the **level of normalization** with the `unify_level` parameter.
+
+| **Value**          | **Description**                                                                                                                                 |
+|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `lexeme`          | Performs the most comprehensive normalization, targeting **all groups (a, b, c)** mentioned below.                                              |
+| `word_form`       | Normalizes by word form, targeting **groups b and c**.                                                                                         |
+| `abbreviation`    | Normalizes by abbreviation, targeting **group c** only.                                                                                        |
+
+---
+
+### **2. taigen / yougen (Target Selection)**
+
+Use the `taigen` and `yougen` flags to control which parts of speech are included in the normalization.
+
+| **Setting**   | **Default Value** | **Description**                                                                                              |
+|---------------|-------------------|--------------------------------------------------------------------------------------------------------------|
+| `taigen`      | `True`            | Includes nouns and other substantives in the normalization. Set to `False` to exclude them.                  |
+| `yougen`      | `False`           | Includes verbs and other predicates in the normalization. Set to `True` to include them (normalized to their lemma). |
+
+---
+
+### **3. expansion (Expansion Flag)**
+
+The expansion flag determines how synonyms are expanded based on the synonym dictionary's internal control flags.
+
+| **Value**         | **Description**                                                                                       |
+|--------------------|-------------------------------------------------------------------------------------------------------|
+| `from_another`   | Expands only the synonyms with a control flag value of `0` in the synonym dictionary.                 |
+| `any`            | Expands all synonyms regardless of their control flag value.                                         |
+
+---
+
+### **4. Detailed Normalization Settings (a, b, c Groups)**
+
+#### **a Group: Comprehensive Lexical Normalization**
+Controls normalization based on vocabulary and semantics using the following settings:
+
+| **Setting**       | **Default Value** | **Description**                                                                                              |
+|--------------------|-------------------|--------------------------------------------------------------------------------------------------------------|
+| `other_language`  | `True`            | Normalizes non-Japanese terms (e.g., English) to Japanese. Set to `False` to disable this feature.            |
+| `alias`           | `True`            | Normalizes aliases. Set to `False` to disable this feature.                                                  |
+| `old_name`        | `True`            | Normalizes old names. Set to `False` to disable this feature.                                                |
+| `misuse`          | `True`            | Normalizes misused terms. Set to `False` to disable this feature.                                            |
+
+---
+
+#### **b Group: Abbreviation Normalization**
+Controls normalization of abbreviations using the following settings:
+
+| **Setting**                 | **Default Value** | **Description**                                                                                              |
+|------------------------------|-------------------|--------------------------------------------------------------------------------------------------------------|
+| `alphabetic_abbreviation`   | `True`            | Normalizes abbreviations written in alphabetic characters. Set to `False` to disable this feature.           |
+| `non_alphabetic_abbreviation` | `True`          | Normalizes abbreviations written in non-alphabetic characters (e.g., Japanese). Set to `False` to disable this feature. |
+
+---
+
+#### **c Group: Orthographic Normalization**
+Controls normalization of orthographic variations and errors using the following settings:
+
+| **Setting**              | **Default Value** | **Description**                                                                                              |
+|---------------------------|-------------------|--------------------------------------------------------------------------------------------------------------|
+| `alphabet`               | `True`            | Normalizes alphabetic variations. Set to `False` to disable this feature.                                    |
+| `orthographic_variation` | `True`            | Normalizes orthographic variations. Set to `False` to disable this feature.                                  |
+| `misspelling`            | `True`            | Normalizes misspellings. Set to `False` to disable this feature.                                             |
+
+---
+
+### **5. custom_synonym (Custom Dictionary)**
+
+If you want to use a custom dictionary, control its behavior with the following setting:
+
+| **Setting**       | **Default Value** | **Description**                                                                                              |
+|--------------------|-------------------|--------------------------------------------------------------------------------------------------------------|
+| `custom_synonym`   | `True`            | Enables the use of a custom dictionary. Set to `False` to disable it.                                        |
+
+---
+
+This hierarchical configuration allows for flexible normalization by defining the scope and target in detail.
 ## Specifying SudachiDict
 The length of text segmentation varies depending on the type of SudachiDict. Default is "full", but you can specify "small" or "core".  
 To use "small" or "core", install it and specify in the `SynonymNormalizer()` arguments:
