@@ -15,7 +15,8 @@ These rules follow the [Sudachi Synonym Dictionary](https://github.com/WorksAppl
 
 ## web-based Demo
 You can try the web-based demo here.  
-[yurenizer Web-demo](https://yurenizer.net/)
+[yurenizer Web-demo](https://yurenizer.net/)  
+<div><video controls src="https://github.com/user-attachments/assets/fdcbaa1a-5692-4c30-a8e1-188d5016443d" muted="false"></video></div>
 
 ## Installation
 ```bash
