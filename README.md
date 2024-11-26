@@ -64,11 +64,10 @@ print(f"Output: {normalizer.normalize(text, config)}")
 # Output: 「東日本旅客鉄道」は「JR東」や「東日本旅客鉄道」とも呼ばれます
 ```
 
-Here is the translated and updated version of the configuration explanation in English:
 
 ---
 
-### **Configuration Details**
+## **Configuration Details**
 
 The settings in *yurenizer* are organized hierarchically, allowing you to control the scope and target of normalization.
 
