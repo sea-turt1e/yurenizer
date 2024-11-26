@@ -15,7 +15,7 @@ yurenizerは、日本語の表記揺れを検出し、統一するためのツ�
 ## Webデモ
 yunenizerのWebデモを以下のリンクから利用できます。  
 [yurenizer Web-demo](https://yurenizer.net/)  
-https://github.com/user-attachments/assets/4dcaf6ef-a245-4dfc-8330-4e56baa5a602
+https://github.com/user-attachments/assets/fdcbaa1a-5692-4c30-a8e1-188d5016443d
 
 ## インストール
 ```bash
