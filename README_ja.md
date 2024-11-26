@@ -1,6 +1,3 @@
-![Python](https://img.shields.io/badge/-Python-F9DC3E.svg?logo=python&style=flat)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-![PyPI Downloads](https://static.pepy.tech/badge/yurenizer)
 # yurenizer
 表記を統一することで文章中の表記揺れを解消するPythonライブラリ
 
