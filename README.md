@@ -47,10 +47,10 @@ from yurenizer import SynonymNormalizer, NormalizerConfig
 normalizer = SynonymNormalizer(synonym_file_path="path/to/synonym_file_path")
 text = "「東日本旅客鉄道」は「JR東」や「JR-East」とも呼ばれます"
 config = NormalizerConfig(
-            unify_level="lexeme",
             taigen=True, 
             yougen=False,
             expansion="from_another", 
+            unify_level="lexeme",
             other_language=False,
             alias=False,
             old_name=False,
@@ -74,19 +74,7 @@ The settings in *yurenizer* are organized hierarchically, allowing you to contro
 
 ---
 
-### **1. unify_level (Normalization Level)**
-
-First, specify the **level of normalization** with the `unify_level` parameter.
-
-| **Value**          | **Description**                                                                                                                                 |
-|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
-| `lexeme`          | Performs the most comprehensive normalization, targeting **all groups (a, b, c)** mentioned below.                                              |
-| `word_form`       | Normalizes by word form, targeting **groups b and c**.                                                                                         |
-| `abbreviation`    | Normalizes by abbreviation, targeting **group c** only.                                                                                        |
-
----
-
-### **2. taigen / yougen (Target Selection)**
+### **1. taigen / yougen (Target Selection)**
 
 Use the `taigen` and `yougen` flags to control which parts of speech are included in the normalization.
 
@@ -97,7 +85,7 @@ Use the `taigen` and `yougen` flags to control which parts of speech are include
 
 ---
 
-### **3. expansion (Expansion Flag)**
+### **2. expansion (Expansion Flag)**
 
 The expansion flag determines how synonyms are expanded based on the synonym dictionary's internal control flags.
 
@@ -105,6 +93,18 @@ The expansion flag determines how synonyms are expanded based on the synonym dic
 |--------------------|-------------------------------------------------------------------------------------------------------|
 | `from_another`   | Expands only the synonyms with a control flag value of `0` in the synonym dictionary.                 |
 | `any`            | Expands all synonyms regardless of their control flag value.                                         |
+
+---
+
+### **3. unify_level (Normalization Level)**
+
+Specify the **level of normalization** with the `unify_level` parameter.
+
+| **Value**          | **Description**                                                                                                                                 |
+|---------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `lexeme`          | Performs the most comprehensive normalization, targeting **all groups (a, b, c)** mentioned below.                                              |
+| `word_form`       | Normalizes by word form, targeting **groups b and c**.                                                                                         |
+| `abbreviation`    | Normalizes by abbreviation, targeting **group c** only.                                                                                        |
 
 ---
 

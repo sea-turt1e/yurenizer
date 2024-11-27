@@ -3,10 +3,10 @@ from dataclasses import dataclass
 
 @dataclass
 class NormalizerConfig:
-    unify_level: str = "lexeme"
     taigen: bool = True
     yougen: bool = False
     expansion: str = "from_another"
+    unify_level: str = "lexeme"
     other_language: bool = True
     alias: bool = True
     old_name: bool = True
