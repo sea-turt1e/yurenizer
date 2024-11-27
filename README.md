@@ -175,26 +175,47 @@ You can specify your own custom dictionary.
 If the same word exists in both the custom dictionary and Sudachi synonym dictionary, the custom dictionary takes precedence.
 
 ### Custom Dictionary Format
-Create a JSON file with the following format for your custom dictionary:
+The custom dictionary file should be in JSON, CSV, or TSV format.
+- JSON file
 ```json
 {
-    "representative_word1": ["synonym1_1", "synonym1_2", ...],
-    "representative_word2": ["synonym2_1", "synonym2_2", ...],
-    ...
+    "Representative word 1": ["Synonym 1_1", "Synonym 1_2", ...],
+    "Representative word 2": ["Synonym 2_1", "Synonym 2_2", ...],
 }
+```
+- CSV file
+```
+Representative word 1,Synonym 1_1,Synonym 1_2,...
+Representative word 2,Synonym 2_1,Synonym 2_2,...
+```
+- TSV file
+```
+Representative word 1	Synonym 1_1	Synonym 1_2	...
+Representative word 2	Synonym 2_1	Synonym 2_2	...
+...
 ```
 
 #### Example
-If you create a file like this, "幽白", "ゆうはく", and "幽☆遊☆白書" will be normalized to "幽遊白書":
+If you create a file like the one below, "幽白", "ゆうはく", and "幽☆遊☆白書" will be normalized to "幽遊白書".
+
+- JSON file
 ```json
 {
-    "幽遊白書": ["幽白", "ゆうはく", "幽☆遊☆白書"]
+    "幽遊白書": ["幽白", "ゆうはく", "幽☆遊☆白書"],
 }
+```
+- CSV file
+```csv
+幽遊白書,幽白,ゆうはく,幽☆遊☆白書
+```
+- TSV file
+```tsv
+幽遊白書	幽白	ゆうはく	幽☆遊☆白書
 ```
 
 ### How to Specify
 ```python
-normalizer = SynonymNormalizer(custom_synonyms_file="path/to/custom_dict.json")
+normalizer = SynonymNormalizer(custom_synonyms_file="path/to/custom_dict_file")
 ```
 
 ## License

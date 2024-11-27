@@ -106,16 +106,19 @@ class SynonymNormalizer:
 
     def load_custom_synonyms(self, file_path: str) -> Dict[str, Set[str]]:
         """
-        Load custom synonym definition JSON file（カスタム同義語定義JSONファイルを読み込む）
+        Load custom synonym definition JSON/CSV file（カスタム同義語定義JSON/CSVファイルを読み込む）
 
         Args:
-            file_path: Path to the custom synonym definition JSON file（カスタム同義語定義JSONファイルへのパス）
+            file_path: Path to the custom synonym definition JSON/CSV file（カスタム同義語定義JSON/CSVファイルへのパス）
 
         JSON format（JSONフォーマット）:
         {
             "standard_form": ["synonym1", "synonym2", ...],
             ...
         }
+        CSV format（CSVフォーマット）:
+            standard_form,synonym1,synonym2,...
+
         Returns:
             Custom synonym definition（カスタム同義語定義）
 
@@ -124,12 +127,22 @@ class SynonymNormalizer:
         """
         try:
             with open(file_path, "r", encoding="utf-8") as f:
-                custom_synonyms = json.load(f)
-                custom_synonyms = {k: set(v) for k, v in custom_synonyms.items() if v}
-                return custom_synonyms
-
+                if file_path.endswith((".csv", ".tsv")):
+                    if file_path.endswith(".csv"):
+                        delimiter = ","
+                    elif file_path.endswith(".tsv"):
+                        delimiter = "\t"
+                    reader = csv.reader(f, delimiter=delimiter)
+                    custom_synonyms = {row[0]: set(row[1:]) for row in reader}
+                elif file_path.endswith(".json"):
+                    custom_synonyms = json.load(f)
+                    custom_synonyms = {k: set(v) for k, v in custom_synonyms.items() if v}
+                else:
+                    raise ValueError("Invalid file format. Please use JSON or CSV.")
         except Exception as e:
-            raise ValueError(f"カスタム同義語定義の読み込みに失敗しました: {e}")
+            raise ValueError(f"Failed to load custom synonyms: {e}")
+        else:
+            return custom_synonyms
 
     def get_standard_yougen(self, morpheme: Morpheme, expansion: Expansion) -> str:
         """
@@ -218,7 +231,7 @@ class SynonymNormalizer:
             normalized_text = normalize(text)
         """
         if not text:
-            raise ValueError("テキストが空です")
+            raise ValueError("Input text is empty.")
         flg_input = FlgInput(
             unify_level=UnifyLevel.from_str(config.unify_level),
             taigen=Taigen.from_int(config.taigen),

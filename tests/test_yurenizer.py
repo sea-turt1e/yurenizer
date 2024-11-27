@@ -234,8 +234,30 @@ class TestSynonymNormalizer:
         result = normalizer.normalize(text, test_flags)
         assert result == "妬む"
 
-    def test_normalize_with_custom_synonym_file(self, default_disabled_flags):
+    def test_normalize_with_custom_synonym_json(self, default_disabled_flags):
         custom_file = "yurenizer/data/custom_synonyms.json"
+        custom_normalizer = SynonymNormalizer(
+            synonym_file_path="./yurenizer/data/synonyms.txt", custom_synonyms_file=custom_file
+        )
+        text = "幽☆遊☆白書を読む。ハンターハンターも読む。"
+        test_flags = deepcopy(default_disabled_flags)
+        test_flags.custom_synonym = True
+        result = custom_normalizer.normalize(text, test_flags)
+        assert result == "幽遊白書を読む。hunterhunterも読む。"
+
+    def test_normalize_with_custom_synonym_csv(self, default_disabled_flags):
+        custom_file = "yurenizer/data/custom_synonyms.csv"
+        custom_normalizer = SynonymNormalizer(
+            synonym_file_path="./yurenizer/data/synonyms.txt", custom_synonyms_file=custom_file
+        )
+        text = "幽☆遊☆白書を読む。ハンターハンターも読む。"
+        test_flags = deepcopy(default_disabled_flags)
+        test_flags.custom_synonym = True
+        result = custom_normalizer.normalize(text, test_flags)
+        assert result == "幽遊白書を読む。hunterhunterも読む。"
+
+    def test_normalize_with_custom_synonym_tsv(self, default_disabled_flags):
+        custom_file = "yurenizer/data/custom_synonyms.tsv"
         custom_normalizer = SynonymNormalizer(
             synonym_file_path="./yurenizer/data/synonyms.txt", custom_synonyms_file=custom_file
         )
