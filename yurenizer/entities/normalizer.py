@@ -3,10 +3,10 @@ from dataclasses import dataclass
 
 @dataclass
 class NormalizerConfig:
-    unify_level: str = "lexeme"
     taigen: bool = True
     yougen: bool = False
     expansion: str = "from_another"
+    unify_level: str = "lexeme"
     other_language: bool = True
     alias: bool = True
     old_name: bool = True
@@ -24,10 +24,10 @@ class NormalizerConfig:
     Each field of this class holds a flag representing the normalization setting.
 
     Args:
-        unify_level（default="lexeme"）: A flag specifying the unification level. The default "lexeme" unifies those with the same lexeme number. The "word_form" option unifies those with the same word form number. The "abbreviation" option unifies those with the same abbreviation number.
         taigen（default=True）: A flag indicating whether to include nouns in the unification. The default is to include. If you do not include, specify False.
         yougen（default=False）: A flag indicating whether to include verbs in the unification. The default is not to include. If you include, specify True. However, verbs are
         expansion（default="from_another"）: A control flag for synonym expansion. The default is to expand only those with an expansion control flag of 0. Specify "ANY" to expand those with an expansion control flag that is always expanded.
+        unify_level（default="lexeme"）: A flag specifying the unification level. The default "lexeme" unifies those with the same lexeme number. The "word_form" option unifies those with the same word form number. The "abbreviation" option unifies those with the same abbreviation number.
         other_language（default=True）: A flag indicating whether to normalize languages other than Japanese to Japanese. The default is to normalize. If you do not normalize, specify False.
         alias（default=True）: A flag indicating whether to normalize aliases. The default is to normalize. If you do not normalize, specify False.
         old_name（default=True）: A flag indicating whether to normalize old names. The default is to normalize. If you do not normalize, specify False.
@@ -57,10 +57,10 @@ class NormalizerConfig:
     このクラスの各フィールドは、正規化の設定を表すフラグを保持します。
 
     Args:
-        unify_level（default="lexeme"）:統一レベルを指定するフラグ。デフォルト"lexeme"はlexeme（語彙素）番号が同じもので統一。"word_form"オプションはwor_form（語形）番号が同じものでの統一。"abbreviation"オプションはabbreviation（略語）番号が同じものでの統一。
         taigen（default=True）: 統一するのに体言を含むかどうかのフラグ。デフォルトは含む。含まない場合はFalseを指定。
         yougen（default=False）: 統一するのに用言を含むかどうかのフラグ。デフォルトは含まない。含む場合はTrueを指定。ただし用言は
         expansion（default="from_another"）: 同義語展開の制御フラグ。デフォルトは同義語辞書の展開制御フラグが0のもののみ展開。"ANY"を指定すると展開制御フラグが常に展開する。
+        unify_level（default="lexeme"）:統一レベルを指定するフラグ。デフォルト"lexeme"はlexeme（語彙素）番号が同じもので統一。"word_form"オプションはwor_form（語形）番号が同じものでの統一。"abbreviation"オプションはabbreviation（略語）番号が同じものでの統一。
         other_language（default=True）: 日本語以外の言語を日本語に正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
         alias（default=True）: 別称を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
         old_name（default=True）: 旧称を正規化するかどうかのフラグ。デフォルトは正規化する。正規化しない場合はFalseを指定。
