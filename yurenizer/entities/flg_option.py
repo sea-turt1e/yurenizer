@@ -148,10 +148,10 @@ class CusotomSynonym(Enum):
 
 @dataclass
 class FlgInput:
-    unify_level: UnifyLevel = UnifyLevel.LEXEME
     taigen: Taigen = Taigen.INCLUDE
     yougen: Yougen = Yougen.EXCLUDE
     expansion: Expansion = Expansion.FROM_ANOTHER
+    unify_level: UnifyLevel = UnifyLevel.LEXEME
     other_language: OtherLanguage = OtherLanguage.ENABLE
     alias: Alias = Alias.ENABLE
     old_name: OldName = OldName.ENABLE

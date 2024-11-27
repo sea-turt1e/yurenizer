@@ -233,10 +233,10 @@ class SynonymNormalizer:
         if not text:
             raise ValueError("Input text is empty.")
         flg_input = FlgInput(
-            unify_level=UnifyLevel.from_str(config.unify_level),
             taigen=Taigen.from_int(config.taigen),
             yougen=Yougen.from_int(config.yougen),
             expansion=Expansion.from_str(config.expansion),
+            unify_level=UnifyLevel.from_str(config.unify_level),
             other_language=OtherLanguage.from_int(config.other_language),
             alias=Alias.from_int(config.alias),
             old_name=OldName.from_int(config.old_name),
