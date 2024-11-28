@@ -1,5 +1,5 @@
 import pytest
-from yurenizer.yurenizer import SynonymNormalizer
+from yurenizer.normalizer import SynonymNormalizer
 from copy import deepcopy
 
 from yurenizer.entities import (
@@ -12,6 +12,8 @@ from yurenizer.entities import (
     NormalizerConfig,
     UnifyLevel,
 )
+
+from yurenizer.loaders import load_sudachi_synonyms
 
 
 class TestSynonymNormalizer:
@@ -203,9 +205,9 @@ class TestSynonymNormalizer:
         with pytest.raises(Exception):
             normalizer.normalize("")
 
-    def test_load_sudachi_synonyms(self, normalizer):
-        synonym_file_path = "yurenizer/data/synonyms.txt"
-        synonyms = normalizer.load_sudachi_synonyms(synonym_file_path)
+    def test_load_sudachi_synonyms(self):
+        synonym_file_path = "./yurenizer/data/synonyms.txt"
+        synonyms = load_sudachi_synonyms(synonym_file_path)
         assert len(synonyms) > 0
         assert all(isinstance(k, str) for k in synonyms.keys())
 
@@ -267,6 +269,6 @@ class TestSynonymNormalizer:
         result = custom_normalizer.normalize(text, test_flags)
         assert result == "幽遊白書を読む。hunterhunterも読む。"
 
-    def test_load_sudachi_synonyms_file_not_found(self, normalizer):
+    def test_load_sudachi_synonyms_file_not_found(self):
         with pytest.raises(FileNotFoundError):
-            normalizer.load_sudachi_synonyms("non_existent_file.txt")
+            load_sudachi_synonyms("non_existent_file.txt")
