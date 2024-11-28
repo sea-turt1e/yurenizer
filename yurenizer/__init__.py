@@ -1,2 +1,2 @@
-from .normalizer import SynonymNormalizer
+from .normalizer import *
 from .loaders import *
