@@ -51,22 +51,25 @@ jobs:
       - name: 必要なパッケージのインストール
         run: |
           python -m pip install --upgrade pip
-          pip install wheel
-          pip install --no-build-isolation -i https://test.pypi.org/simple/ yurenizer
+          pip install sudachidict_full
+          pip install -i https://test.pypi.org/simple/ yurenizer
 
       - name: インストールされたパッケージのバージョン確認
         run: |
           pip show yurenizer
 
+      - name: download synonym file
+        run: |
+            curl -L -f -o synonyms.txt https://raw.githubusercontent.com/WorksApplications/SudachiDict/refs/heads/develop/src/main/text/synonyms.txt
+            if [ ! -f yurenizer/data/synonyms.txt ]; then
+                echo "Failed to download synonyms.txt"
+                exit 1
+            fi
+
       - name: テストスクリプトの実行
         run: |
           echo 'from yurenizer import SynonymNormalizer, NormalizerConfig' > test.py
-          echo 'from sudachipy import dictionary' >> test.py
-          echo 'sudachi_dict = dictionary.Dictionary().dict_type()' >> test.py
-          echo 'import sudachidict_full' >> test.py
-          echo 'import os' >> test.py
-          echo 'synonym_file_path = os.path.join(os.path.dirname(sudachidict_full.__file__), "resources", "synonyms.txt")' >> test.py
-          echo 'normalizer = SynonymNormalizer(synonym_file_path=synonym_file_path, sudachi_dict=sudachi_dict)' >> test.py
+          echo 'normalizer = SynonymNormalizer(synonym_file_path="synonyms.txt")' >> test.py
           echo 'text = "「パソコン」は「パーソナルコンピュータ」の「synonym」で、「パーソナル・コンピュータ」と表記することもあります。"' >> test.py
           echo 'print(normalizer.normalize(text))' >> test.py
           python test.py
