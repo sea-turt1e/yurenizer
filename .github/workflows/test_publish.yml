@@ -31,10 +31,11 @@ jobs:
 
         - name: publish package to TestPyPI
           run: |
+            poetry config repositories.testpypi https://test.pypi.org/legacy/
             poetry publish --build --repository testpypi
           env:
             POETRY_PYPI_TOKEN_PYPI: ${{ secrets.TEST_PYPI_TOKEN}}  # TestPyPIの認証トークン
-            
+
         - name: パッケージ公開後の待機
           run: sleep 120 
 
