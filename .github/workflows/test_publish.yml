@@ -51,7 +51,8 @@ jobs:
       - name: 必要なパッケージのインストール
         run: |
           python -m pip install --upgrade pip
-          pip install -i https://test.pypi.org/simple/ yurenizer
+          pip install wheel
+          pip install --no-build-isolation -i https://test.pypi.org/simple/ yurenizer
 
       - name: インストールされたパッケージのバージョン確認
         run: |
