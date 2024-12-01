@@ -1,9 +1,10 @@
-import csv
-import json
-from collections import defaultdict
-from typing import Dict, List, Optional, Set, Union
+from typing import Dict, Optional, Set, Union, List
 
-from yurenizer.entities import (
+from sudachipy import dictionary, tokenizer
+from sudachipy.morpheme import Morpheme
+
+from .entities import (
+    TaigenOrYougen,
     AlphabeticAbbreviation,
     Alphabet,
     Expansion,
@@ -19,17 +20,16 @@ from yurenizer.entities import (
     Alias,
     OldName,
     Misuse,
-    TaigenOrYougen,
+    SudachiDictType,
     FlgExpantion,
     WordForm,
     Abbreviation,
     SpellingInconsistency,
     SynonymField,
     Synonym,
-    SudachiDictType,
     NormalizerConfig,
 )
-from sudachipy import Morpheme, dictionary, tokenizer
+from .loaders import load_sudachi_synonyms, load_custom_synonyms
 
 
 class SynonymNormalizer:
@@ -40,16 +40,12 @@ class SynonymNormalizer:
         custom_synonyms_file: Optional[str] = None,
     ) -> None:
         """
-        Initialize the tool for unifying spelling variations using SudachiDict's synonym dictionary
-        （SudachiDictの同義語辞書を使用した表記揺れ統一ツールの初期化）
+        Initialize the tool for unifying spelling variations using SudachiDict's synonym dictionary.
 
         Args:
-            synonym_file_path: Path to the SudachiDict synonym file（SudachiDictの同義語ファイルへのパス）
-            sudachi_dict: SudachiDict type (default: full)（SudachiDictのタイプ（デフォルト: full））
-            custom_synonyms_file: Path to the custom synonym definition file（カスタム同義語定義ファイルへのパス）
-
-        Example:
-            normalizer = SynonymNormalizer(synonym_file_path="synonyms.txt")
+            synonym_file_path: Path to the SudachiDict synonym file
+            sudachi_dict: SudachiDict type (default: full)
+            custom_synonyms_file: Path to the custom synonym definition file
         """
         # Initialize Sudachi
         sudachi_dic = dictionary.Dictionary(dict=sudachi_dict)
@@ -61,156 +57,13 @@ class SynonymNormalizer:
         self.yougen_matcher = sudachi_dic.pos_matcher(lambda x: x[0] in ["動詞", "形容詞"])
 
         # Load synonyms from SudachiDict's synonym file
-        synonyms = self.load_sudachi_synonyms(synonym_file_path)
+        synonyms = load_sudachi_synonyms(synonym_file_path)
         self.synonyms = {int(k): v for k, v in synonyms.items()}
 
         # Load custom synonyms
-        self.custom_synonyms = {}
+        self.custom_synonyms: Dict[str, Set[str]] = {}
         if custom_synonyms_file:
-            self.custom_synonyms = self.load_custom_synonyms(custom_synonyms_file)
-
-    def load_sudachi_synonyms(self, synonym_file: str) -> Dict[int, List[Synonym]]:
-        """
-        Load synonym information from SudachiDict's synonyms.txt（SudachiDictのsynonyms.txtから同義語情報を読み込む）
-
-        Args:
-            synonym_file: Path to the SudachiDict synonym file（SudachiDictの同義語ファイルへのパス）
-
-        Returns:
-            Synonym information dictionary（同義語情報の辞書）
-
-        Example:
-            synonyms = load_sudachi_synonyms("synonyms.txt")
-        """
-        with open(synonym_file, "r", encoding="utf-8") as f:
-            reader = csv.reader(f)
-            data = [row for row in reader]
-
-        synonyms = defaultdict(list)
-        for line in data:
-            if not line:
-                continue
-            synonyms[line[0]].append(
-                Synonym(
-                    taigen_or_yougen=int(line[1]),  # Taigen or Yougen
-                    flg_expansion=int(line[2]),  # Expansion control flag
-                    lexeme_id=int(line[3].split("/")[0]),  # Lexeme number within the group
-                    word_form=int(line[4]),  # Word form type within the same lexeme
-                    abbreviation=int(line[5]),  # Abbreviation
-                    spelling_inconsistency=int(line[6]),  # Spelling inconsistency information
-                    field=line[7],  # Field information
-                    lemma=line[8],  # Lemma
-                )
-            )
-        return synonyms
-
-    def load_custom_synonyms(self, file_path: str) -> Dict[str, Set[str]]:
-        """
-        Load custom synonym definition JSON/CSV file（カスタム同義語定義JSON/CSVファイルを読み込む）
-
-        Args:
-            file_path: Path to the custom synonym definition JSON/CSV file（カスタム同義語定義JSON/CSVファイルへのパス）
-
-        JSON format（JSONフォーマット）:
-        {
-            "standard_form": ["synonym1", "synonym2", ...],
-            ...
-        }
-        CSV format（CSVフォーマット）:
-            standard_form,synonym1,synonym2,...
-
-        Returns:
-            Custom synonym definition（カスタム同義語定義）
-
-        Example:
-            custom_synonyms = load_custom_synonyms("custom_synonyms.json")
-        """
-        try:
-            with open(file_path, "r", encoding="utf-8") as f:
-                if file_path.endswith((".csv", ".tsv")):
-                    if file_path.endswith(".csv"):
-                        delimiter = ","
-                    elif file_path.endswith(".tsv"):
-                        delimiter = "\t"
-                    reader = csv.reader(f, delimiter=delimiter)
-                    custom_synonyms = {row[0]: set(row[1:]) for row in reader}
-                elif file_path.endswith(".json"):
-                    custom_synonyms = json.load(f)
-                    custom_synonyms = {k: set(v) for k, v in custom_synonyms.items() if v}
-                else:
-                    raise ValueError("Invalid file format. Please use JSON or CSV.")
-        except Exception as e:
-            raise ValueError(f"Failed to load custom synonyms: {e}")
-        else:
-            return custom_synonyms
-
-    def get_standard_yougen(self, morpheme: Morpheme, expansion: Expansion) -> str:
-        """
-        Get the standard representation of a verb or adjective（動詞または形容詞の標準形を取得）
-
-        Args:
-            morpheme: Morpheme information（形態素情報）
-            expansion: Synonym expansion control flag（同義語展開の制御フラグ）
-
-        Returns:
-            Standard form（同義語が見つからない場合は元の単語）
-
-        Example:
-            standard_yougen = get_standard_yougen(morpheme, expansion)
-        """
-
-        # Search for synonym group from the group dictionary
-        synonym_group = self.get_synonym_group(morpheme)
-        if synonym_group:
-            yougen_group = [s for s in synonym_group if s.taigen_or_yougen == TaigenOrYougen.YOUGEN.value]
-            if expansion == Expansion.ANY:
-                return yougen_group[0].lemma
-            elif expansion == Expansion.FROM_ANOTHER:
-                if {y.lemma: y.flg_expansion for y in yougen_group}.get(morpheme.normalized_form()) == 0:
-                    return yougen_group[0].lemma
-        return morpheme.surface()
-
-    def get_standard_taigen(self, morpheme: Morpheme, expansion: Expansion) -> str:
-        """
-        Get the standard representation of a noun（名詞の標準形を取得）
-
-        Args:
-            morpheme: Morpheme information（形態素情報）
-            expansion: Synonym expansion control flag（同義語展開の制御フラグ）
-
-        Returns:
-            Standard form（同義語が見つからない場合は元の単語）
-
-        Example:
-            standard_taigen = get_standard_taigen(morpheme, expansion)
-        """
-        # Search for synonym group from the group dictionary
-        synonym_group = self.get_synonym_group(morpheme)
-        if synonym_group:
-            if expansion == Expansion.ANY:
-                return synonym_group[0].lemma
-            elif expansion == Expansion.FROM_ANOTHER:
-                if {s.lemma: s.flg_expansion for s in synonym_group}.get(morpheme.normalized_form()) == 0:
-                    return synonym_group[0].lemma
-        return morpheme.surface()
-
-    def get_custom_synonym(self, morpheme: Morpheme) -> Optional[str]:
-        """
-        Get the custom synonym representation of a word（単語のカスタム同義語表現を取得）
-
-        Args:
-            morpheme: Morpheme information（形態素情報）
-
-        Returns:
-            Custom synonym representation（カスタム同義語表現）
-
-        Example:
-            custom_representation = get_custom_synonym(morpheme)
-        """
-        custom_representation = self.normalize_word_by_custom_synonyms(morpheme.surface())
-        if custom_representation:
-            return custom_representation
-        return None
+            self.custom_synonyms = load_custom_synonyms(custom_synonyms_file)
 
     def normalize(
         self,
@@ -218,20 +71,37 @@ class SynonymNormalizer:
         config: NormalizerConfig = NormalizerConfig(),
     ) -> str:
         """
-        Normalize text by unifying spelling variations and synonyms（表記揺れと同義語を統一してテキストを正規化する）
+        Normalize text by unifying spelling variations and synonyms.
 
         Args:
-            text: Text to normalize（正規化するテキスト）
-            config: Normalization options（正規化オプション）
+            text: Text to normalize
+            config: Normalization options
 
         Returns:
-            Normalized text（正規化されたテキスト）
-
-        Example:
-            normalized_text = normalize(text)
+            Normalized text
         """
         if not text:
             raise ValueError("Input text is empty.")
+
+        # Convert config to FlgInput with hierarchical conditions
+        flg_input = self._prepare_normalization_flags(config)
+
+        # If all flags are disabled, return the original text
+        if not self._should_normalize(flg_input):
+            return text
+
+        return self._normalize_text(text, flg_input)
+
+    def _prepare_normalization_flags(self, config: NormalizerConfig) -> FlgInput:
+        """
+        Prepare normalization flags with hierarchical conditions.
+
+        Args:
+            config: Normalization configuration
+
+        Returns:
+            Prepared FlgInput with hierarchical flags
+        """
         flg_input = FlgInput(
             taigen=Taigen.from_int(config.taigen),
             yougen=Yougen.from_int(config.yougen),
@@ -248,7 +118,8 @@ class SynonymNormalizer:
             misspelling=Misspelling.from_int(config.misspelling),
             custom_synonym=CusotomSynonym.from_int(config.custom_synonym),
         )
-        # Since the conditions are hierarchical, if the lower-level condition is true, the upper-level condition is also set to true
+
+        # Hierarchical flag settings
         if (
             flg_input.alphabet == Alphabet.ENABLE
             or flg_input.orthographic_variation == OrthographicVariation.ENABLE
@@ -266,38 +137,42 @@ class SynonymNormalizer:
             flg_input.old_name = OldName.ENABLE
             flg_input.misuse = Misuse.ENABLE
 
-        # If all flags are disabled, return the original text
-        if (
+        return flg_input
+
+    def _should_normalize(self, flg_input: FlgInput) -> bool:
+        """
+        Determine if normalization should be performed based on input flags.
+
+        Args:
+            flg_input: Normalization flags
+
+        Returns:
+            Whether normalization should be performed
+        """
+        return not (
             flg_input.custom_synonym == CusotomSynonym.DISABLE
             and flg_input.other_language == OtherLanguage.DISABLE
             and flg_input.alias == Alias.DISABLE
             and flg_input.old_name == OldName.DISABLE
             and flg_input.misuse == Misuse.DISABLE
-        ):
-            return text
-        return self.__normalize_text(text=text, flg_input=flg_input)
+        )
 
-    def __normalize_text(self, text: str, flg_input: FlgInput) -> str:
+    def _normalize_text(self, text: str, flg_input: FlgInput) -> str:
         """
-        Normalize text by unifying spelling variations and synonyms（表記揺れと同義語を統一してテキストを正規化する）
+        Internal method to normalize text with given flags.
 
         Args:
-            text: Text to normalize（正規化するテキスト）
-            flg_input: Normalization options（正規化オプション）
+            text: Text to normalize
+            flg_input: Normalization flags
 
         Returns:
-            Normalized text（正規化されたテキスト）
-
-        Example:
-            normalized_text = __normalize_text(text, flg_input)
+            Normalized text
         """
         morphemes = self.get_morphemes(text)
-        normalized_parts = []
-        for morpheme in morphemes:
-            normalized_parts.append(self.normalize_word(morpheme, flg_input))
+        normalized_parts = [self._normalize_word(morpheme, flg_input) for morpheme in morphemes]
         return "".join(normalized_parts)
 
-    def normalize_word(self, morpheme: Morpheme, flg_input: FlgInput) -> str:
+    def _normalize_word(self, morpheme: Morpheme, flg_input: FlgInput) -> str:
         """
         Normalize a word by unifying spelling variations and synonyms（表記揺れと同義語を統一して単語を正規化する）
 
@@ -309,7 +184,7 @@ class SynonymNormalizer:
             Normalized word（正規化された単語）
 
         Example:
-            normalized_word = normalize_word(morpheme, flg_input)
+            normalized_word = _normalize_word(morpheme, flg_input)
         """
         # Use custom synonym definitions
         custom_representation = self.get_custom_synonym(morpheme)
@@ -351,7 +226,7 @@ class SynonymNormalizer:
 
         # Change subsequent processing according to the expansion control flag
         if flg_input.expansion == Expansion.ANY:
-            if not self.is_input_word_expansion_any_or_from_another(morpheme, synonym_group):
+            if not self._is_input_word_expansion_any_or_from_another(morpheme, synonym_group):
                 return morpheme.surface()
         elif flg_input.expansion == Expansion.FROM_ANOTHER:
             if not self.is_input_word_expansion_from_another(morpheme, synonym_group):
@@ -366,7 +241,7 @@ class SynonymNormalizer:
             or flg_input.old_name == OldName.ENABLE
             or flg_input.misuse == Misuse.ENABLE
         ):
-            synonym_group = self.get_represent_synonym_group_lexeme_id(flg_input, morpheme, synonym_group)
+            synonym_group = self._get_represent_synonym_group_lexeme_id(flg_input, morpheme, synonym_group)
         if not synonym_group:
             return morpheme.surface()
 
@@ -378,7 +253,7 @@ class SynonymNormalizer:
             or flg_input.orthographic_variation == OrthographicVariation.ENABLE
             or flg_input.misspelling == Misspelling.ENABLE
         ):
-            synonym_group = self.get_represent_synonym_group_by_same_word_form(flg_input, morpheme, synonym_group)
+            synonym_group = self._get_represent_synonym_group_by_same_word_form(flg_input, morpheme, synonym_group)
 
         if not synonym_group:
             return morpheme.surface()
@@ -399,7 +274,7 @@ class SynonymNormalizer:
             return represent_synonym.lemma
         return morpheme.surface()
 
-    def is_input_word_expansion_any_or_from_another(self, morpheme: Morpheme, synonym_group: List[Synonym]) -> bool:
+    def _is_input_word_expansion_any_or_from_another(self, morpheme: Morpheme, synonym_group: List[Synonym]) -> bool:
         """
         Judge whether the input word is expanded by synonyms（入力単語が同義語展開されるかどうかを判断する）
 
@@ -411,7 +286,7 @@ class SynonymNormalizer:
             True if the input word is expanded by synonyms, False otherwise（同義語展開される場合はTrue, されない場合はFalse）
 
         Example:
-            is_expansion = is_input_word_expansion_any_or_from_another(morpheme, synonym_group)
+            is_expansion = _is_input_word_expansion_any_or_from_another(morpheme, synonym_group)
         """
         flg_expansion = self.get_synonym_value_from_morpheme(morpheme, synonym_group, SynonymField.FLG_EXPANSION)
         if flg_expansion in (FlgExpantion.ANY.value, FlgExpantion.FROM_ANOTHER.value):
@@ -437,7 +312,7 @@ class SynonymNormalizer:
             return True
         return False
 
-    def get_represent_synonym_group_lexeme_id(
+    def _get_represent_synonym_group_lexeme_id(
         self, flg_input: FlgInput, morpheme: Morpheme, synonym_group: List[Synonym]
     ) -> List[Synonym]:
         """
@@ -451,7 +326,7 @@ class SynonymNormalizer:
             Synonym object list（Synonymオブジェクトのリスト）
 
         Example:
-            synonym_group = get_represent_synonym_group_lexeme_id(flg_input, morpheme, synonym_group)
+            synonym_group = _get_represent_synonym_group_lexeme_id(flg_input, morpheme, synonym_group)
         """
         is_expansion = False
         filtered_synonym_group = []
@@ -471,7 +346,7 @@ class SynonymNormalizer:
             filtered_synonym_group = [s for s in synonym_group if s.lexeme_id == lexeme_id]
         return filtered_synonym_group
 
-    def get_represent_synonym_group_by_same_word_form(
+    def _get_represent_synonym_group_by_same_word_form(
         self, flg_input: FlgInput, morpheme: Morpheme, synonym_group: List[Synonym]
     ) -> List[Synonym]:
         """
@@ -485,7 +360,7 @@ class SynonymNormalizer:
             Synonym object list（Synonymオブジェクトのリスト）
 
         Example:
-            synonym_group = get_represent_synonym_group_by_same_word_form(flg_input, morpheme, synonym_group)
+            synonym_group = _get_represent_synonym_group_by_same_word_form(flg_input, morpheme, synonym_group)
         """
         is_expansion = False
         filtered_synonym_group = []
@@ -553,7 +428,7 @@ class SynonymNormalizer:
                 filtered_synonym_group = [s for s in synonym_group if s.abbreviation == abbreviation]
         return filtered_synonym_group
 
-    def normalize_word_by_custom_synonyms(self, word: str) -> Optional[str]:
+    def _normalize_word_by_custom_synonyms(self, word: str) -> Optional[str]:
         """
         Normalize a word by custom synonyms（カスタム同義語で単語を正規化する）
 
@@ -564,11 +439,29 @@ class SynonymNormalizer:
             Normalized word（正規化された単語）
 
         Example:
-            normalized_word = normalize_word_by_custom_synonyms(word)
+            normalized_word = _normalize_word_by_custom_synonyms(word)
         """
         for k, v in self.custom_synonyms.items():
             if word in v:
                 return k
+        return None
+
+    def get_custom_synonym(self, morpheme: Morpheme) -> Optional[str]:
+        """
+        Get the custom synonym representation of a word（単語のカスタム同義語表現を取得）
+
+        Args:
+            morpheme: Morpheme information（形態素情報）
+
+        Returns:
+            Custom synonym representation（カスタム同義語表現）
+
+        Example:
+            custom_representation = get_custom_synonym(morpheme)
+        """
+        custom_representation = self._normalize_word_by_custom_synonyms(morpheme.surface())
+        if custom_representation:
+            return custom_representation
         return None
 
     def get_morphemes(self, text: str) -> List[str]:
