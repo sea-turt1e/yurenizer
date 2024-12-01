@@ -25,14 +25,14 @@ pip install yurenizer
 
 ## Download Synonym Dictionary
 ```bash
-curl -L -o /path/to/synonyms.txt https://raw.githubusercontent.com/WorksApplications/SudachiDict/refs/heads/develop/src/main/text/synonyms.txt
+curl -L -o synonyms.txt https://raw.githubusercontent.com/WorksApplications/SudachiDict/refs/heads/develop/src/main/text/synonyms.txt
 ```
 
 ## Usage
 ### Quick Start
 ```python
 from yurenizer import SynonymNormalizer, NormalizerConfig
-normalizer = SynonymNormalizer(synonym_file_path="path/to/synonym_file_path")
+normalizer = SynonymNormalizer(synonym_file_path="synonyms.txt")
 text = "「パソコン」は「パーソナルコンピュータ」の「synonym」で、「パーソナル・コンピュータ」と表記することもあります。"
 print(normalizer.normalize(text))
 # Output: 「パーソナルコンピューター」は「パーソナルコンピューター」の「シノニム」で、「パーソナルコンピューター」と表記することもあります。
@@ -44,7 +44,7 @@ You can control normalization by specifying `NormalizerConfig` as an argument to
 #### Example with Custom Settings
 ```python
 from yurenizer import SynonymNormalizer, NormalizerConfig
-normalizer = SynonymNormalizer(synonym_file_path="path/to/synonym_file_path")
+normalizer = SynonymNormalizer(synonym_file_path="synonyms.txt")
 text = "「東日本旅客鉄道」は「JR東」や「JR-East」とも呼ばれます"
 config = NormalizerConfig(
             taigen=True, 
