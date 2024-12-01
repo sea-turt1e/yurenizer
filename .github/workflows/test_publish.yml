@@ -12,32 +12,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+        - name: Checkout code
+          uses: actions/checkout@v4
+  
+        - name: Set up Python
+          uses: actions/setup-python@v4
+          with:
+            python-version: '3.11'  # 使用するPythonのバージョン
+  
+        - name: Install Poetry
+          run: |
+            curl -sSL https://install.python-poetry.org | python3 -
+            echo "export PATH=$HOME/.local/bin:$PATH" >> $GITHUB_ENV
+  
+        - name: Install dependencies
+          run: |
+            poetry install
 
-      - name: Python のセットアップ
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.11'
-
-      - name: Poetry のインストール
-        uses: abatilo/actions-poetry@v2.2.0
-        with:
-          poetry-version: '1.7.1'
-
-      - name: 依存関係のインストール
-        run: poetry install
-
-      - name: パッケージのビルド
-        run: poetry build
-
-      - name: TestPyPI へのアップロード
-        env:
-          TWINE_USERNAME: '__token__'
-          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
-        run: poetry publish -r test-pypi
-
-      - name: パッケージ公開後の待機
-        run: sleep 120 
+        - name: publish package to TestPyPI
+          run: |
+            poetry publish --build --repository testpypi
+          env:
+            POETRY_PYPI_TOKEN_PYPI: ${{ secrets.TEST_PYPI_TOKEN}}  # TestPyPIの認証トークン
+            
+        - name: パッケージ公開後の待機
+          run: sleep 120 
 
   test_install:
     runs-on: ubuntu-latest
@@ -52,8 +51,7 @@ jobs:
       - name: 必要なパッケージのインストール
         run: |
           python -m pip install --upgrade pip
-          pip install sudachipy sudachidict_full
-          pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple yurenizer
+          pip install -i https://test.pypi.org/simple/ yurenizer
 
       - name: インストールされたパッケージのバージョン確認
         run: |
