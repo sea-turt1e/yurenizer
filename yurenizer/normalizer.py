@@ -1,35 +1,35 @@
-from typing import Dict, Optional, Set, Union, List
+from typing import Dict, List, Optional, Set, Union
 
 from sudachipy import dictionary, tokenizer
 from sudachipy.morpheme import Morpheme
 
 from .entities import (
-    TaigenOrYougen,
-    AlphabeticAbbreviation,
-    Alphabet,
-    Expansion,
-    FlgInput,
-    NonAlphabeticAbbreviation,
-    Misspelling,
-    CusotomSynonym,
-    OrthographicVariation,
-    UnifyLevel,
-    Taigen,
-    Yougen,
-    OtherLanguage,
-    Alias,
-    OldName,
-    Misuse,
-    SudachiDictType,
-    FlgExpantion,
-    WordForm,
     Abbreviation,
-    SpellingInconsistency,
-    SynonymField,
-    Synonym,
+    Alias,
+    Alphabet,
+    AlphabeticAbbreviation,
+    CusotomSynonym,
+    Expansion,
+    FlgExpantion,
+    FlgInput,
+    Misspelling,
+    Misuse,
+    NonAlphabeticAbbreviation,
     NormalizerConfig,
+    OldName,
+    OrthographicVariation,
+    OtherLanguage,
+    SpellingInconsistency,
+    SudachiDictType,
+    Synonym,
+    SynonymField,
+    Taigen,
+    TaigenOrYougen,
+    UnifyLevel,
+    WordForm,
+    Yougen,
 )
-from .loaders import load_sudachi_synonyms, load_custom_synonyms
+from .loaders import load_custom_synonyms, load_sudachi_synonyms
 
 
 class SynonymNormalizer:
