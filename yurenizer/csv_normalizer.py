@@ -26,5 +26,4 @@ class CsvSynonymNormalizer(SynonymNormalizer):
             header = ["raw", "normalized"]
             writer.writerow(header)
             for row in reader:
-                print([row[0], self.normalize(row[0], config)])
                 writer.writerow([row[0], self.normalize(row[0], config)])
