@@ -144,22 +144,6 @@ yurenizerの設定は、以下のような階層構造に基づいて正規化�
 
 このように統一の範囲や対象を段階的に制御することで、柔軟な正規化を実現します。
 
-## SudachiDictの指定
-SudachiDictの種類によって分割される長さが変わります。デフォルトは"full"ですが、"small"、または"core"を指定することができます。  
-"small"または"core"を指定する場合はインストールして、`SynonymNormalizer()`の引数に指定してください。
-```bash
-pip install sudachidict_small
-# or
-pip install sudachidict_core
-```
-
-```python
-normalizer = SynonymNormalizer(sudachi_dict="small")
-# or
-normalizer = SynonymNormalizer(sudachi_dict="core")
-```
-※SudachiDictの詳細はこちらをご覧ください。  
-
 ## カスタム辞書の指定
 ユーザー自身のカスタム辞書を指定することができます。  
 カスタム辞書とSudachi同義語辞書に同じ語がある場合、カスタム辞書が優先されます。  
@@ -208,6 +192,50 @@ normalizer = SynonymNormalizer(sudachi_dict="core")
 ```python
 normalizer = SynonymNormalizer(custom_synonyms_file="path/to/custom_synonyms_file")
 ```
+
+## csvファイルを入力とした正規化
+csvファイルを入力として、まとめて正規化を行うことができます。  
+例えば以下のような`input.csv`ファイルを用意します。  
+```csv:input.csv
+JR東日本
+JR東
+JR-East
+```
+
+以下のように`CsvSynonymNormalizer`を使用して正規化を行います。
+```python
+from yurenizer import CsvSynonymNormalizer
+input_file_path = "input.csv"
+output_file_path = "output.csv"
+csv_normalizer = CsvSynonymNormalizer(synonym_file_path="synonyms.txt")
+csv_normalizer.normalize_csv(input_file_path, output_file_path)
+```
+
+`output.csv`ファイルが以下のように出力されます。  
+```csv:output.csv
+raw,normalized
+JR東日本,東日本旅客鉄道
+JR東,東日本旅客鉄道
+JR-East,東日本旅客鉄道
+```
+
+
+## SudachiDictの指定
+SudachiDictの種類によって分割される長さが変わります。デフォルトは"full"ですが、"small"、または"core"を指定することができます。  
+"small"または"core"を指定する場合はインストールして、`SynonymNormalizer()`の引数に指定してください。
+```bash
+pip install sudachidict_small
+# or
+pip install sudachidict_core
+```
+
+```python
+normalizer = SynonymNormalizer(sudachi_dict="small")
+# or
+normalizer = SynonymNormalizer(sudachi_dict="core")
+```
+※SudachiDictの詳細は[こちら](https://github.com/WorksApplications/SudachiDict)をご覧ください。  
+
 
 ## Zenn解説記事
 yurenizerの解説記事をZennに投稿しています。  

@@ -154,21 +154,6 @@ If you want to use a custom dictionary, control its behavior with the following 
 ---
 
 This hierarchical configuration allows for flexible normalization by defining the scope and target in detail.
-## Specifying SudachiDict
-The length of text segmentation varies depending on the type of SudachiDict. Default is "full", but you can specify "small" or "core".  
-To use "small" or "core", install it and specify in the `SynonymNormalizer()` arguments:
-```bash
-pip install sudachidict_small
-# or
-pip install sudachidict_core
-```
-
-```python
-normalizer = SynonymNormalizer(sudachi_dict="small")
-# or
-normalizer = SynonymNormalizer(sudachi_dict="core")
-```
-※ Please refer to SudachiDict documentation for details.
 
 ## Custom Dictionary Specification
 You can specify your own custom dictionary.  
@@ -217,6 +202,49 @@ If you create a file like the one below, "幽白", "ゆうはく", and "幽☆�
 ```python
 normalizer = SynonymNormalizer(custom_synonyms_file="path/to/custom_dict_file")
 ```
+
+## Normalization Using a CSV File
+You can also normalize text using a CSV file.
+
+### Example
+```csv:input.csv
+JR東日本
+JR東
+JR-East
+```
+
+Normalize using `CsvSynonymNormalizer` as shown below.
+```python
+from yurenizer import CsvSynonymNormalizer
+input_file_path = "input.csv"
+output_file_path = "output.csv"
+csv_normalizer = CsvSynonymNormalizer(synonym_file_path="synonyms.txt")
+csv_normalizer.normalize_csv(input_file_path, output_file_path)
+```
+
+The `output.csv` file will be output as follows.
+```csv:output.csv
+raw,normalized
+JR東日本,東日本旅客鉄道
+JR東,東日本旅客鉄道
+JR-East,東日本旅客鉄道
+```
+
+## Specifying SudachiDict
+The length of text segmentation varies depending on the type of SudachiDict. Default is "full", but you can specify "small" or "core".  
+To use "small" or "core", install it and specify in the `SynonymNormalizer()` arguments:
+```bash
+pip install sudachidict_small
+# or
+pip install sudachidict_core
+```
+
+```python
+normalizer = SynonymNormalizer(sudachi_dict="small")
+# or
+normalizer = SynonymNormalizer(sudachi_dict="core")
+```
+※ Please refer to [SudachiDict documentation](https://github.com/WorksApplications/SudachiDict) for details.
 
 ## License
 This project is licensed under the [Apache License 2.0](LICENSE).
