@@ -166,3 +166,4 @@ yurenizer/data/synonyms.txt
 yurenizer/data/custom_synonyms.json
 tmp/*
 .vscode/*
+.DS_Store

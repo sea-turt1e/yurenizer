@@ -201,7 +201,9 @@ class SynonymNormalizer:
         # Determine whether it's yougen or taigen
         is_yougen = self.yougen_matcher(morpheme)
         is_taigen = self.taigen_matcher(morpheme)
-        if (flg_input.yougen == Yougen.INCLUDE and is_yougen) or (flg_input.taigen == Taigen.INCLUDE and is_taigen):
+        if flg_input.yougen == Yougen.INCLUDE and is_yougen:
+            morpheme = self.get_morphemes(morpheme.dictionary_form())[0]
+        elif flg_input.taigen == Taigen.INCLUDE and is_taigen:
             pass
         else:
             return morpheme.surface()

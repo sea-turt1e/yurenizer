@@ -236,6 +236,14 @@ class TestSynonymNormalizer:
         result = normalizer.normalize(text, test_flags)
         assert result == "妬む"
 
+    def test_normalize_yougen_katsuyou(self, normalizer, default_disabled_flags):
+        text = "ねたんだ"
+        test_flags = deepcopy(default_disabled_flags)
+        test_flags.yougen = True
+        test_flags.orthographic_variation = OrthographicVariation.ENABLE.value
+        result = normalizer.normalize(text, test_flags)
+        assert result == "妬むだ"
+
     def test_normalize_with_custom_synonym_json(self, default_disabled_flags):
         custom_file = "yurenizer/data/custom_synonyms.json"
         custom_normalizer = SynonymNormalizer(
