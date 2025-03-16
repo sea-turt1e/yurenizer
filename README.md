@@ -14,9 +14,9 @@ For example, it can unify variations like "パソコン" (pasokon), "パーソ�
 These rules follow the [Sudachi Synonym Dictionary](https://github.com/WorksApplications/SudachiDict/blob/develop/docs/synonyms.md).
 
 ## web-based Demo
-You can try the web-based demo here.  
-[yurenizer Web-demo](https://yurenizer.net/)  
-<div><video controls src="https://github.com/user-attachments/assets/fdcbaa1a-5692-4c30-a8e1-188d5016443d" muted="false"></video></div>
+~~You can try the web-based demo here.~~  
+~~yurenizer Web-demo~~  
+stopped the publication of Demo.
 
 ## Installation
 ```bash
