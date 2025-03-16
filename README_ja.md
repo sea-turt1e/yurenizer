@@ -14,9 +14,9 @@ yurenizerは、日本語の表記揺れを検出し、統一するためのツ�
 このルールは[Sudachi同義語辞書](https://github.com/WorksApplications/SudachiDict/blob/develop/docs/synonyms.md)に準じています。
 
 ## Webデモ
-yunenizerのWebデモを以下のリンクから利用できます。  
-[yurenizer Web-demo](https://yurenizer.net/)  
-<div><video controls src="https://github.com/user-attachments/assets/fdcbaa1a-5692-4c30-a8e1-188d5016443d" muted="false"></video></div>
+~~yunenizerのWebデモを以下のリンクから利用できます。~~  
+~~yurenizer Web-demo~~  
+Webデモを非公開にしました。
 
 ## インストール
 ```bash
